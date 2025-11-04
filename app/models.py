@@ -13,10 +13,12 @@ from . import db
 @event.listens_for(Engine, "connect")
 def set_sqlite_pragma(dbapi_connection, connection_record):  # pragma: no cover - sqlite specific
     """Ensure SQLite enforces foreign keys during local development."""
-
-    cursor = dbapi_connection.cursor()
-    cursor.execute("PRAGMA foreign_keys=ON")
-    cursor.close()
+    
+    # Only apply PRAGMA to SQLite connections, not PostgreSQL
+    if dbapi_connection.__class__.__module__ == "sqlite3":
+        cursor = dbapi_connection.cursor()
+        cursor.execute("PRAGMA foreign_keys=ON")
+        cursor.close()
 
 
 class CallLog(db.Model):  # type: ignore[misc]
