@@ -1,0 +1,57 @@
+name: Deploy to Azure App Service
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+env:
+  IMAGE_NAME: braselton-ai-agent
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Log in to Azure
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Log in to Azure Container Registry
+        run: |
+          az acr login --name ${{ secrets.ACR_NAME }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ secrets.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+            ${{ secrets.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:latest
+
+      - name: Update App Service container settings
+        run: |
+          az webapp config container set \ 
+            --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} \ 
+            --name ${{ secrets.APP_SERVICE_NAME }} \ 
+            --docker-custom-image-name ${{ secrets.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${{ github.sha }} \ 
+            --docker-registry-server-url https://${{ secrets.ACR_LOGIN_SERVER }}
+
+      - name: Restart App Service
+        run: |
+          az webapp restart \ 
+            --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} \ 
+            --name ${{ secrets.APP_SERVICE_NAME }}
+
