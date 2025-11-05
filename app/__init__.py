@@ -40,7 +40,6 @@ def create_app() -> Flask:
         SMTP2GO_SMTP_PORT=int(os.getenv("SMTP2GO_SMTP_PORT", "587")),
         SMTP2GO_USERNAME=os.getenv("SMTP2GO_USERNAME", ""),
         SMTP2GO_PASSWORD=os.getenv("SMTP2GO_PASSWORD", ""),
-        TEAMS_WEBHOOK_URL=os.getenv("TEAMS_WEBHOOK_URL", ""),
         ADMIN_USERNAME=os.getenv("ADMIN_USERNAME", "admin"),
         ADMIN_PASSWORD=os.getenv("ADMIN_PASSWORD", "changeme"),
         LOG_RETENTION_DAYS=int(os.getenv("LOG_RETENTION_DAYS", "1825")),  # 5 years
@@ -74,11 +73,11 @@ def register_blueprints(app: Flask) -> None:
 
     from .routes import main_bp
     from .admin import admin_bp
-    from .monitor import monitor_bp
+    from .health import health_bp
 
     app.register_blueprint(main_bp)
     app.register_blueprint(admin_bp)
-    app.register_blueprint(monitor_bp)
+    app.register_blueprint(health_bp)
 
 
 # WSGI entry point expected by gunicorn (``app:app``)

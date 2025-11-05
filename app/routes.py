@@ -10,7 +10,6 @@ from flask import Blueprint, current_app, jsonify, request
 from .ai_logic import handle_intent, process_audio_to_response
 from .email_utils import send_billing_email
 from .models import CallLog, db
-from .monitor import alert_teams
 
 
 main_bp = Blueprint("main", __name__)
@@ -102,9 +101,6 @@ def intents() -> Any:
             body=intent_result.email_template.body,
         )
 
-    if intent_result.alert_message:
-        alert_teams(intent_result.alert_message)
-
     if call_id:
         log_call(
             call_id=call_id,
@@ -142,6 +138,6 @@ def log_call(
     db.session.commit()
 
     if sentiment_score is not None and sentiment_score < -0.5:
-        alert_teams(f"Negative sentiment detected for call {call_id}: {sentiment_score}")
+        current_app.logger.warning("Negative sentiment detected for call %s: %s", call_id, sentiment_score)
 
 

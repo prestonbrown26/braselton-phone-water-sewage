@@ -26,7 +26,6 @@ class IntentResult:
     response_text: str
     sentiment_score: float
     email_template: Optional[EmailTemplate] = None
-    alert_message: Optional[str] = None
     metadata: Dict[str, str] = field(default_factory=dict)
 
     def to_dict(self) -> Dict[str, object]:
@@ -42,9 +41,6 @@ class IntentResult:
                 "recipient": self.email_template.recipient,
                 "subject": self.email_template.subject,
             }
-
-        if self.alert_message:
-            data["alert"] = self.alert_message
 
         return data
 
