@@ -44,6 +44,7 @@ def create_app() -> Flask:
         ADMIN_USERNAME=os.getenv("ADMIN_USERNAME", "admin"),
         ADMIN_PASSWORD=os.getenv("ADMIN_PASSWORD", "changeme"),
         LOG_RETENTION_DAYS=int(os.getenv("LOG_RETENTION_DAYS", "1825")),  # 5 years
+        EMAIL_FROM_ADDRESS=os.getenv("EMAIL_FROM_ADDRESS", "utilitybilling@braselton.net"),
     )
 
     configure_logging(app)

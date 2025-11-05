@@ -20,9 +20,11 @@ def send_billing_email(*, to_address: str, subject: str, body: str) -> None:
         current_app.logger.warning("SMTP2Go credentials are not fully configured; skipping email send")
         return
 
+    from_address = current_app.config.get("EMAIL_FROM_ADDRESS", "utilitybilling@braselton.net")
+    
     msg = EmailMessage()
     msg["Subject"] = subject
-    msg["From"] = "utilitybilling@braselton.net"
+    msg["From"] = from_address
     msg["To"] = to_address
     msg.set_content(body)
 
