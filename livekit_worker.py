@@ -9,6 +9,7 @@ from typing import Optional
 
 from dotenv import load_dotenv
 from livekit import rtc
+from livekit import agents
 from livekit.agents import (
     AutoSubscribe,
     JobContext,
@@ -16,7 +17,6 @@ from livekit.agents import (
     cli,
     llm,
 )
-from livekit.agents.voice_assistant import VoiceAssistant
 from livekit.plugins import openai
 
 from agent_utils import detect_intent, log_conversation, should_transfer_to_human
@@ -57,8 +57,8 @@ async def entrypoint(ctx: JobContext):
     )
     
     # Create the voice assistant with OpenAI Realtime
-    assistant = VoiceAssistant(
-        vad=openai.VAD.load(),  # Voice activity detection
+    assistant = agents.VoiceAssistant(
+        vad=agents.silero.VAD.load(),  # Voice activity detection
         stt=openai.STT(),  # Speech-to-text (Whisper)
         llm=openai.LLM.with_realtime(model="gpt-4o-realtime-preview-2024-10-01"),
         tts=openai.TTS(voice="alloy"),  # Text-to-speech
