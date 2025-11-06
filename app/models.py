@@ -22,17 +22,27 @@ def set_sqlite_pragma(dbapi_connection, connection_record):  # pragma: no cover 
 
 
 class CallLog(db.Model):  # type: ignore[misc]
-    """Stores caller transcripts, metadata, and sentiment."""
+    """Stores caller transcripts, metadata, and sentiment.
+    
+    Per Georgia state law LG 20-022:
+    - Utility account communication: 5-year retention
+    - Dispute-related: Keep until resolved + 5 years
+    - Emergency-related: 5 years after resolution
+    
+    Solution: Store ALL transcripts for 5 years (simplest approach per Blake's request)
+    """
 
     __tablename__ = "call_logs"
 
     id = db.Column(db.Integer, primary_key=True)
-    call_id = db.Column(db.String(64), unique=True, nullable=False)
-    caller_number = db.Column(db.String(32))
+    call_id = db.Column(db.String(128), unique=True, nullable=False, index=True)
+    caller_number = db.Column(db.String(32), index=True)
     transcript = db.Column(db.Text, nullable=False)
-    sentiment_score = db.Column(db.Float)
+    duration_seconds = db.Column(db.Integer)
+    sentiment = db.Column(db.String(20))  # positive, neutral, negative
+    transferred = db.Column(db.Boolean, default=False, nullable=False)
     email_sent = db.Column(db.Boolean, default=False, nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False, index=True)
 
     def to_dict(self) -> dict[str, object]:
         return {
@@ -40,7 +50,9 @@ class CallLog(db.Model):  # type: ignore[misc]
             "call_id": self.call_id,
             "caller_number": self.caller_number,
             "transcript": self.transcript,
-            "sentiment_score": self.sentiment_score,
+            "duration_seconds": self.duration_seconds,
+            "sentiment": self.sentiment,
+            "transferred": self.transferred,
             "email_sent": self.email_sent,
             "created_at": self.created_at.isoformat(),
         }

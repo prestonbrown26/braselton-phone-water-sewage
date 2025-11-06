@@ -31,19 +31,21 @@ def create_app() -> Flask:
         SECRET_KEY=os.getenv("SECRET_KEY", "dev-secret-key"),
         SQLALCHEMY_DATABASE_URI=os.getenv("DATABASE_URL", "sqlite:///dev.db"),
         SQLALCHEMY_TRACK_MODIFICATIONS=False,
-        LIVEKIT_URL=os.getenv("LIVEKIT_URL", ""),
-        LIVEKIT_API_KEY=os.getenv("LIVEKIT_API_KEY", ""),
-        LIVEKIT_API_SECRET=os.getenv("LIVEKIT_API_SECRET", ""),
-        OPENAI_API_KEY=os.getenv("OPENAI_API_KEY", ""),
-        SMTP2GO_API_KEY=os.getenv("SMTP2GO_API_KEY", ""),
+        # Retell AI configuration
+        RETELL_API_KEY=os.getenv("RETELL_API_KEY", ""),
+        # SMTP2Go email configuration
         SMTP2GO_SMTP_HOST=os.getenv("SMTP2GO_SMTP_HOST", "smtp.smtp2go.com"),
         SMTP2GO_SMTP_PORT=int(os.getenv("SMTP2GO_SMTP_PORT", "587")),
         SMTP2GO_USERNAME=os.getenv("SMTP2GO_USERNAME", ""),
         SMTP2GO_PASSWORD=os.getenv("SMTP2GO_PASSWORD", ""),
+        EMAIL_FROM_ADDRESS=os.getenv("EMAIL_FROM_ADDRESS", "utilitybilling@braselton.net"),
+        # Admin portal credentials
         ADMIN_USERNAME=os.getenv("ADMIN_USERNAME", "admin"),
         ADMIN_PASSWORD=os.getenv("ADMIN_PASSWORD", "changeme"),
-        LOG_RETENTION_DAYS=int(os.getenv("LOG_RETENTION_DAYS", "1825")),  # 5 years
-        EMAIL_FROM_ADDRESS=os.getenv("EMAIL_FROM_ADDRESS", "utilitybilling@braselton.net"),
+        # 5-year retention per Georgia state law LG 20-022
+        LOG_RETENTION_DAYS=int(os.getenv("LOG_RETENTION_DAYS", "1825")),
+        # Town website for email links
+        TOWN_WEBSITE_URL=os.getenv("TOWN_WEBSITE_URL", "https://braselton.net"),
     )
 
     configure_logging(app)

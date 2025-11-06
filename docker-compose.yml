@@ -8,15 +8,16 @@ services:
     environment:
       FLASK_ENV: development
       DATABASE_URL: postgresql+psycopg2://postgres:postgres@db:5432/braselton
-      LIVEKIT_URL: ${LIVEKIT_URL:-}
-      LIVEKIT_API_KEY: ${LIVEKIT_API_KEY:-}
-      LIVEKIT_API_SECRET: ${LIVEKIT_API_SECRET:-}
-      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      RETELL_API_KEY: ${RETELL_API_KEY:-}
+      SMTP2GO_SMTP_HOST: smtp.smtp2go.com
+      SMTP2GO_SMTP_PORT: 587
       SMTP2GO_USERNAME: ${SMTP2GO_USERNAME:-}
       SMTP2GO_PASSWORD: ${SMTP2GO_PASSWORD:-}
-      TEAMS_WEBHOOK_URL: ${TEAMS_WEBHOOK_URL:-}
+      EMAIL_FROM_ADDRESS: utilitybilling@braselton.net
+      TOWN_WEBSITE_URL: https://braselton.net
       ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-changeme}
+      LOG_RETENTION_DAYS: 1825
     depends_on:
       - db
 
