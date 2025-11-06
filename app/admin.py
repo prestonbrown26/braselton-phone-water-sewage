@@ -4,38 +4,64 @@ from __future__ import annotations
 
 import csv
 import io
-from functools import wraps
 
-from flask import Blueprint, Response, current_app, render_template, request
+from flask import Blueprint, Response, current_app, redirect, render_template, request, session, url_for, flash
+from flask_login import login_required, login_user, logout_user, UserMixin
 
-from . import db
+from . import db, login_manager
 from .models import CallLog
 
 
 admin_bp = Blueprint("admin", __name__)
 
 
-def requires_auth(func):
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-        auth = request.authorization
+class AdminUser(UserMixin):
+    """Simple user class for admin authentication."""
+    
+    def __init__(self, user_id):
+        self.id = user_id
+
+
+@login_manager.user_loader
+def load_user(user_id):
+    """Load user for Flask-Login."""
+    if user_id == "admin":
+        return AdminUser(user_id)
+    return None
+
+
+@admin_bp.route("/admin/login", methods=["GET", "POST"])
+def login():
+    """Admin login page."""
+    
+    if request.method == "POST":
+        username = request.form.get("username")
+        password = request.form.get("password")
+        
         expected_user = current_app.config.get("ADMIN_USERNAME")
         expected_pass = current_app.config.get("ADMIN_PASSWORD")
+        
+        if username == expected_user and password == expected_pass:
+            user = AdminUser("admin")
+            login_user(user)
+            next_page = request.args.get("next")
+            return redirect(next_page or url_for("admin.search_transcripts"))
+        else:
+            flash("Invalid username or password", "error")
+    
+    return render_template("login.html")
 
-        if not auth or auth.username != expected_user or auth.password != expected_pass:
-            return Response(
-                "Authentication required",
-                401,
-                {"WWW-Authenticate": 'Basic realm="Braselton Admin"'},
-            )
 
-        return func(*args, **kwargs)
-
-    return wrapper
+@admin_bp.route("/admin/logout")
+@login_required
+def logout():
+    """Logout admin user."""
+    logout_user()
+    return redirect(url_for("admin.login"))
 
 
 @admin_bp.route("/admin/calls", methods=["GET"])
-@requires_auth
+@login_required
 def admin_calls():
     """Render recent call logs for the admin portal."""
 
@@ -44,7 +70,7 @@ def admin_calls():
 
 
 @admin_bp.route("/admin/transcripts", methods=["GET"])
-@requires_auth
+@login_required
 def search_transcripts():
     """Search for call transcripts by call ID, phone number, or date.
     
@@ -80,7 +106,7 @@ def search_transcripts():
 
 
 @admin_bp.route("/admin/export", methods=["GET"])
-@requires_auth
+@login_required
 def export_calls():
     """Stream call logs as CSV for archival or compliance."""
 

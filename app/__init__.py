@@ -9,9 +9,13 @@ from pathlib import Path
 from dotenv import load_dotenv
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
+from flask_login import LoginManager
 
 # SQLAlchemy instance shared across modules
 db = SQLAlchemy()
+
+# Login manager
+login_manager = LoginManager()
 
 
 def create_app() -> Flask:
@@ -51,6 +55,11 @@ def create_app() -> Flask:
     configure_logging(app)
 
     db.init_app(app)
+    
+    # Initialize login manager
+    login_manager.init_app(app)
+    login_manager.login_view = 'admin.login'
+    login_manager.login_message = 'Please log in to access this page.'
 
     register_blueprints(app)
 
