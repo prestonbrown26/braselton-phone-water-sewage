@@ -49,9 +49,12 @@ def handle_email_request() -> Any:
         # Log the incoming data for debugging
         current_app.logger.info("Received email webhook data: %s", data)
         
-        email_type = data.get("email_type", "payment_link")
-        user_email = data.get("user_email")
-        call_id = data.get("call_id", "unknown")
+        # Retell sends data nested under 'args'
+        args = data.get("args", data)
+        
+        email_type = args.get("email_type", "payment_link")
+        user_email = args.get("user_email")
+        call_id = args.get("call_id", data.get("call", {}).get("call_id", "unknown"))
         
         if not user_email:
             current_app.logger.error("Missing user_email in webhook data: %s", data)
