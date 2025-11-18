@@ -15,7 +15,7 @@ def send_billing_email(*, to_address: str, subject: str, body: str) -> None:
     smtp_port = current_app.config["SMTP2GO_SMTP_PORT"]
     username = current_app.config["SMTP2GO_USERNAME"]
     password = current_app.config["SMTP2GO_PASSWORD"]
-    stub_mode = current_app.config.get("EMAIL_STUB_MODE", True)
+    stub_mode = current_app.config.get("EMAIL_STUB_MODE", False)
 
     if stub_mode:
         current_app.logger.info(
