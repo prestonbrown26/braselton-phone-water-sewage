@@ -105,8 +105,26 @@ def retell_transcript_webhook() -> Any:
             return jsonify({"error": "call.call_id is required"}), 400
 
         transcript = (call_data.get("transcript") or "").strip()
+
+        # Retell may deliver an empty transcript if conversation summary
+        # is still being generated. Fall back to transcript_with_tool_calls
+        # so we can still archive the call for compliance.
         if not transcript:
-            return jsonify({"error": "call.transcript is required"}), 400
+            stitched_lines: list[str] = []
+            for entry in call_data.get("transcript_with_tool_calls") or []:
+                role = entry.get("role")
+                content = (entry.get("content") or "").strip()
+                if role and content:
+                    stitched_lines.append(f"{role.capitalize()}: {content}")
+            if stitched_lines:
+                transcript = "\n".join(stitched_lines)
+
+        if not transcript:
+            recording_url = call_data.get("recording_url") or call_data.get("public_log_url")
+            transcript = (
+                "Transcript not provided by Retell. "
+                + (f"Reference recording: {recording_url}" if recording_url else "No recording URL supplied.")
+            )
 
         # Prevent duplicate inserts if Retell retries
         existing = CallLog.query.filter_by(call_id=call_id).first()
