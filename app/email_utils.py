@@ -15,9 +15,21 @@ def send_billing_email(*, to_address: str, subject: str, body: str) -> None:
     smtp_port = current_app.config["SMTP2GO_SMTP_PORT"]
     username = current_app.config["SMTP2GO_USERNAME"]
     password = current_app.config["SMTP2GO_PASSWORD"]
+    stub_mode = current_app.config.get("EMAIL_STUB_MODE", False)
+
+    if stub_mode:
+        current_app.logger.info(
+            "EMAIL_STUB_MODE enabled - would send email to %s with subject '%s'. Body:\n%s",
+            to_address,
+            subject,
+            body,
+        )
+        return
 
     if not all([smtp_host, smtp_port, username, password]):
-        current_app.logger.warning("SMTP2Go credentials are not fully configured; skipping email send")
+        current_app.logger.warning(
+            "SMTP2Go credentials are not fully configured; skipping email send"
+        )
         return
 
     from_address = current_app.config.get("EMAIL_FROM_ADDRESS", "utilitybilling@braselton.net")

@@ -43,6 +43,8 @@ def create_app() -> Flask:
         SMTP2GO_USERNAME=os.getenv("SMTP2GO_USERNAME", ""),
         SMTP2GO_PASSWORD=os.getenv("SMTP2GO_PASSWORD", ""),
         EMAIL_FROM_ADDRESS=os.getenv("EMAIL_FROM_ADDRESS", "utilitybilling@braselton.net"),
+        EMAIL_STUB_MODE=os.getenv("EMAIL_STUB_MODE", "false").strip().lower()
+        in {"1", "true", "yes", "on"},
         # Admin portal credentials
         ADMIN_USERNAME=os.getenv("ADMIN_USERNAME", "admin"),
         ADMIN_PASSWORD=os.getenv("ADMIN_PASSWORD", "changeme"),
