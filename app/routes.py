@@ -7,6 +7,7 @@ This integration layer receives webhooks from Retell AI and:
 
 from __future__ import annotations
 
+from datetime import datetime, timezone
 from typing import Any
 
 from flask import Blueprint, current_app, jsonify, request
@@ -86,64 +87,73 @@ def handle_email_request() -> Any:
 
 
 @main_bp.route("/webhook/transcript", methods=["POST"])
-def store_transcript() -> Any:
-    """Store call transcript for 5-year retention.
-    
-    Expected payload from Retell AI on call end:
-    {
-        "call_id": "string",
-        "caller_phone": "string",
-        "duration_seconds": number,
-        "transcript": "full conversation text",
-        "timestamp": "ISO datetime",
-        "transferred": boolean,
-        "sentiment": "positive" | "neutral" | "negative"
-    }
-    """
-    
+def retell_transcript_webhook() -> Any:
+    """Handle Retell AI agent-level webhook events."""
+
     try:
-        data = request.get_json(force=True, silent=False)
-        
-        call_id = data.get("call_id")
+        payload = request.get_json(force=True, silent=False)
+        current_app.logger.info("Received transcript webhook payload: %s", payload)
+
+        event_type = payload.get("event")
+        if event_type != "call_ended":
+            current_app.logger.info("Ignoring unsupported event '%s'", event_type)
+            return jsonify({"status": "ignored", "event": event_type}), 200
+
+        call_data = payload.get("call", {})
+        call_id = call_data.get("call_id")
         if not call_id:
-            return jsonify({"error": "call_id is required"}), 400
-        
-        transcript = data.get("transcript", "")
+            return jsonify({"error": "call.call_id is required"}), 400
+
+        transcript = (call_data.get("transcript") or "").strip()
         if not transcript:
-            return jsonify({"error": "transcript is required"}), 400
-        
-        # Check if already exists (idempotency)
+            return jsonify({"error": "call.transcript is required"}), 400
+
+        # Prevent duplicate inserts if Retell retries
         existing = CallLog.query.filter_by(call_id=call_id).first()
         if existing:
-            current_app.logger.info("Call %s already logged, skipping", call_id)
-            return jsonify({"status": "already_exists"})
-        
-        # Create call log entry
+            current_app.logger.info("Call %s already logged; acking webhook", call_id)
+            return jsonify({"status": "already_exists"}), 200
+
+        caller_number = call_data.get("from_number")
+        start_ts = call_data.get("start_timestamp")
+        end_ts = call_data.get("end_timestamp")
+        duration_seconds: int | None = None
+        call_end_dt = None
+
+        if isinstance(start_ts, (int, float)) and isinstance(end_ts, (int, float)):
+            duration_seconds = max(0, int((end_ts - start_ts) / 1000))
+
+        if isinstance(end_ts, (int, float)):
+            call_end_dt = datetime.fromtimestamp(end_ts / 1000, tz=timezone.utc)
+        else:
+            call_end_dt = datetime.now(timezone.utc)
+
         call_log = CallLog(
             call_id=call_id,
-            caller_number=data.get("caller_phone"),
+            caller_number=caller_number,
             transcript=transcript,
-            duration_seconds=data.get("duration_seconds"),
-            sentiment=data.get("sentiment", "neutral"),
-            transferred=data.get("transferred", False),
-            email_sent=False,  # Will be updated by email webhook
+            duration_seconds=duration_seconds,
+            sentiment="neutral",
+            transferred=False,
+            email_sent=False,
+            created_at=call_end_dt,
         )
-        
+
         db.session.add(call_log)
         db.session.commit()
-        
+
         current_app.logger.info(
-            "Stored transcript for call %s (duration: %ds, sentiment: %s)",
+            "Stored call %s (duration=%s sec, caller=%s)",
             call_id,
-            call_log.duration_seconds,
-            call_log.sentiment,
+            duration_seconds,
+            caller_number,
         )
-        
-        return jsonify({"status": "stored", "id": call_log.id})
-        
-    except Exception as e:
-        current_app.logger.exception("Failed to store transcript")
-        return jsonify({"error": str(e)}), 500
+
+        return jsonify({"status": "ok"}), 200
+
+    except Exception as exc:
+        current_app.logger.exception("Failed to handle transcript webhook")
+        return jsonify({"error": str(exc)}), 500
 
 
 def get_email_template(email_type: str) -> tuple[str, str]:
