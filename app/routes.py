@@ -10,7 +10,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Any
 
-from flask import Blueprint, current_app, jsonify, request
+from flask import Blueprint, current_app, jsonify, render_template, request
 
 from .email_templates import ensure_email_template
 from .email_utils import send_billing_email
@@ -21,14 +21,14 @@ main_bp = Blueprint("main", __name__)
 
 @main_bp.route("/", methods=["GET"])
 def index() -> Any:
-    """Basic service banner."""
-    
-    return jsonify(
-        {
-            "service": "braselton_retell_integration",
-            "status": "online",
-            "message": "Town of Braselton AI Phone Agent - Retell AI Integration Layer",
-        }
+    """Public landing page with key contact info."""
+
+    agent_number = current_app.config.get("AGENT_PHONE_NUMBER", "Not configured")
+    transfer_numbers = current_app.config.get("TRANSFER_NUMBERS", [])
+    return render_template(
+        "home.html",
+        agent_number=agent_number,
+        transfer_numbers=transfer_numbers,
     )
 
 

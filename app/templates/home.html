@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Town of Braselton Utilities – AI Agent</title>
+    <style>
+      :root {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+          Oxygen, Ubuntu, sans-serif;
+        color: #1f2a48;
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background: linear-gradient(135deg, #e0e7ff, #fef3c7);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 30px 16px;
+      }
+      .card {
+        background: #ffffff;
+        border-radius: 18px;
+        padding: 32px;
+        max-width: 720px;
+        width: 100%;
+        box-shadow: 0 25px 60px rgba(30, 41, 59, 0.16);
+        border: 1px solid rgba(99, 102, 241, 0.08);
+      }
+      h1 {
+        margin-top: 0;
+        font-size: 28px;
+        color: #1d2656;
+      }
+      p.subtitle {
+        margin-bottom: 24px;
+        color: #4b5563;
+        line-height: 1.6;
+      }
+      .section {
+        background: #f8fafc;
+        border-radius: 12px;
+        padding: 18px;
+        border: 1px solid #e2e8f0;
+        margin-bottom: 16px;
+      }
+      .section h2 {
+        margin: 0 0 12px 0;
+        font-size: 16px;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+        color: #475569;
+      }
+      .primary-number {
+        font-size: 32px;
+        font-weight: 700;
+        color: #1d4ed8;
+        margin: 0;
+      }
+      ul.transfer-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      ul.transfer-list li {
+        font-size: 18px;
+        font-weight: 600;
+        color: #0f172a;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .pill {
+        background: #e0e7ff;
+        color: #312e81;
+        padding: 4px 10px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 600;
+      }
+      footer {
+        margin-top: 24px;
+        font-size: 12px;
+        color: #64748b;
+        text-align: right;
+      }
+      @media (max-width: 600px) {
+        .card {
+          padding: 24px;
+        }
+        .primary-number {
+          font-size: 26px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <h1>Town of Braselton Water & Sewer</h1>
+      <p class="subtitle">
+        The AI assistant answers common billing and service questions 24/7 and
+        routes callers to staff when needed.
+      </p>
+
+      <div class="section">
+        <h2>Primary AI Agent Number</h2>
+        <p class="primary-number">{{ agent_number }}</p>
+      </div>
+
+      <div class="section">
+        <h2>Transfer Destinations</h2>
+        {% if transfer_numbers %}
+        <ul class="transfer-list">
+          {% for entry in transfer_numbers %}
+          <li>
+            📞 {{ entry }}
+          </li>
+          {% endfor %}
+        </ul>
+        {% else %}
+        <p style="color:#94a3b8;">No transfer numbers configured yet.</p>
+        {% endif %}
+      </div>
+
+      <footer>Configured via environment variables in the integration app.</footer>
+    </div>
+  </body>
+</html>
+
+

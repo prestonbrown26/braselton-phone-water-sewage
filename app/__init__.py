@@ -52,7 +52,15 @@ def create_app() -> Flask:
         LOG_RETENTION_DAYS=int(os.getenv("LOG_RETENTION_DAYS", "1825")),
         # Town website for email links
         TOWN_WEBSITE_URL=os.getenv("TOWN_WEBSITE_URL", "https://braselton.net"),
+        AGENT_PHONE_NUMBER=os.getenv("AGENT_PHONE_NUMBER", "Not yet assigned"),
     )
+
+    transfer_numbers = [
+        number.strip()
+        for number in os.getenv("TRANSFER_NUMBERS", "").split(",")
+        if number.strip()
+    ]
+    app.config["TRANSFER_NUMBERS"] = transfer_numbers
 
     configure_logging(app)
 
