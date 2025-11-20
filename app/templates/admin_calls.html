@@ -71,7 +71,11 @@
     <tbody>
       {% for log in logs %}
       <tr>
-        <td>{{ log.call_id }}</td>
+        <td>
+          <a href="{{ url_for('admin.call_detail', log_id=log.id) }}" style="color: var(--brand); font-weight:600; text-decoration:none;">
+            {{ log.call_id }}
+          </a>
+        </td>
         <td>{{ log.caller_number or "Unknown" }}</td>
         <td style="max-width: 380px; white-space: pre-line">
           {{ log.transcript[:350] }}{% if log.transcript|length > 350 %}…{% endif %}

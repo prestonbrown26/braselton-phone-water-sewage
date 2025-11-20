@@ -188,3 +188,16 @@ def manage_email_templates():
         active_page="templates",
     )
 
+
+@admin_bp.route("/admin/calls/<int:log_id>", methods=["GET"])
+@login_required
+def call_detail(log_id: int):
+    """Display full details for a specific call log."""
+
+    log = CallLog.query.filter_by(id=log_id).first_or_404()
+    return render_template(
+        "admin_call_detail.html",
+        log=log,
+        active_page=None,
+    )
+

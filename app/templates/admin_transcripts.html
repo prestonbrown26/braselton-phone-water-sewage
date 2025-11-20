@@ -87,6 +87,21 @@
     padding-bottom: 14px;
     margin-bottom: 18px;
   }
+  .card-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .detail-link {
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--brand);
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
   .call-id {
     font-family: 'JetBrains Mono', 'Courier New', monospace;
     font-size: 14px;
@@ -301,18 +316,23 @@
           {% endif %}
         </div>
       </div>
-      <div style="display: flex; gap: 6px; flex-wrap: wrap">
-        {% if log.sentiment == 'positive' %}
-        <span class="badge badge-positive">Positive</span>
-        {% elif log.sentiment == 'negative' %}
-        <span class="badge badge-negative">Negative</span>
-        {% else %}
-        <span class="badge badge-neutral">Neutral</span>
-        {% endif %} {% if log.transferred %}
-        <span class="badge badge-transferred">Transferred</span>
-        {% endif %} {% if log.email_sent %}
-        <span class="badge badge-email">Email Sent</span>
-        {% endif %}
+      <div class="card-header-actions">
+        <div style="display: flex; gap: 6px; flex-wrap: wrap">
+          {% if log.sentiment == 'positive' %}
+          <span class="badge badge-positive">Positive</span>
+          {% elif log.sentiment == 'negative' %}
+          <span class="badge badge-negative">Negative</span>
+          {% else %}
+          <span class="badge badge-neutral">Neutral</span>
+          {% endif %} {% if log.transferred %}
+          <span class="badge badge-transferred">Transferred</span>
+          {% endif %} {% if log.email_sent %}
+          <span class="badge badge-email">Email Sent</span>
+          {% endif %}
+        </div>
+        <a class="detail-link" href="{{ url_for('admin.call_detail', log_id=log.id) }}">
+          View full record →
+        </a>
       </div>
     </div>
 
