@@ -381,38 +381,23 @@ https://braselton-utilities-agent.azurewebsites.net/admin/transcripts
 
 ## 📧 SMTP2Go Setup (Blake's Instructions)
 
-### 1. Create SMTP2Go Account
+SMTP2Go is already wired into the Flask app (see `app/email_utils.py`). Blake just needs to finish the DNS + credential steps so SMTP2Go is authorized to spoof `@braselton.net`.
 
-Town pays directly: https://www.smtp2go.com
+**Hand him this checklist:** [`SMTP2GO_SETUP.md`](./SMTP2GO_SETUP.md)
 
-### 2. Configure Sending Address
-
-- From address: `utilitybilling@braselton.net`
-- Get SMTP credentials from dashboard
-
-### 3. DNS Configuration (Blake)
-
-**SPF Record:**
-```
-TXT @ v=spf1 include:smtp2go.com ~all
-```
-
-**DKIM Record:**
-(SMTP2Go will provide)
-
-### 4. Test Email Delivery
-
-```bash
-curl -X POST https://your-app.azurewebsites.net/webhook/email \
-  -H "Content-Type: application/json" \
-  -d '{
-    "call_id": "test123",
-    "email_type": "payment_link",
-    "user_email": "your-test@email.com"
-  }'
-```
-
-Check that email arrives and replies go to shared mailbox.
+Highlights:
+1. Add `braselton.net` as a sender domain in SMTP2Go and publish the SPF/DKIM records it provides.
+2. Create an SMTP user (e.g. `braselton-utilities-ai`) and hand the username/password to the app team.
+3. Set these environment variables in Render/Azure:
+   ```
+   SMTP2GO_SMTP_HOST=smtp.smtp2go.com
+   SMTP2GO_SMTP_PORT=587
+   SMTP2GO_USERNAME=<smtp user>
+   SMTP2GO_PASSWORD=<smtp password>
+   EMAIL_FROM_ADDRESS=utilitybilling@braselton.net
+   EMAIL_STUB_MODE=false
+   ```
+4. Run the smoke-test snippet in the checklist to confirm delivery.
 
 ---
 
