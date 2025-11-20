@@ -14,7 +14,7 @@ from flask import Blueprint, current_app, jsonify, request
 
 from .email_templates import ensure_email_template
 from .email_utils import send_billing_email
-from .models import CallLog, EmailTemplateConfig, db
+from .models import CallLog, EmailEvent, EmailTemplateConfig, TransferEvent, db
 
 main_bp = Blueprint("main", __name__)
 
@@ -76,7 +76,15 @@ def handle_email_request() -> Any:
         call_log = CallLog.query.filter_by(call_id=call_id).first()
         if call_log:
             call_log.email_sent = True
-            db.session.commit()
+        email_event = EmailEvent(
+            call_id=call_id,
+            template_type=email_type,
+            recipient=user_email,
+            subject=subject,
+            body=body,
+        )
+        db.session.add(email_event)
+        db.session.commit()
         
         current_app.logger.info("Email sent for call %s to %s", call_id, user_email)
         
@@ -172,6 +180,45 @@ def retell_transcript_webhook() -> Any:
 
     except Exception as exc:
         current_app.logger.exception("Failed to handle transcript webhook")
+        return jsonify({"error": str(exc)}), 500
+
+
+@main_bp.route("/webhook/transfer", methods=["POST"])
+def retell_transfer_webhook() -> Any:
+    """Record transfer attempts initiated by the agent."""
+
+    try:
+        data = request.get_json(force=True, silent=False)
+        current_app.logger.info("Received transfer webhook payload: %s", data)
+
+        call_id = data.get("call_id")
+        if not call_id:
+            return jsonify({"error": "call_id is required"}), 400
+
+        target_number = data.get("target_number")
+        reason = data.get("reason")
+        notes = data.get("notes") or data.get("details")
+
+        event = TransferEvent(
+            call_id=call_id,
+            target_number=target_number,
+            reason=reason,
+            notes=notes,
+        )
+        db.session.add(event)
+
+        call_log = CallLog.query.filter_by(call_id=call_id).first()
+        if call_log:
+            call_log.transferred = True
+
+        db.session.commit()
+        current_app.logger.info(
+            "Logged transfer for call %s → %s", call_id, target_number or "unknown target"
+        )
+        return jsonify({"status": "ok"}), 200
+
+    except Exception as exc:
+        current_app.logger.exception("Failed to handle transfer webhook")
         return jsonify({"error": str(exc)}), 500
 
 

@@ -44,6 +44,22 @@ class CallLog(db.Model):  # type: ignore[misc]
     email_sent = db.Column(db.Boolean, default=False, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False, index=True)
 
+    email_events = db.relationship(
+        "EmailEvent",
+        back_populates="call",
+        cascade="all, delete-orphan",
+        lazy="selectin",
+        order_by="desc(EmailEvent.created_at)",
+    )
+
+    transfer_events = db.relationship(
+        "TransferEvent",
+        back_populates="call",
+        cascade="all, delete-orphan",
+        lazy="selectin",
+        order_by="desc(TransferEvent.created_at)",
+    )
+
     def to_dict(self) -> dict[str, object]:
         return {
             "id": self.id,
@@ -57,6 +73,36 @@ class CallLog(db.Model):  # type: ignore[misc]
             "created_at": self.created_at.isoformat(),
         }
 
+
+class EmailEvent(db.Model):  # type: ignore[misc]
+    """Represents an outbound email triggered during a call."""
+
+    __tablename__ = "email_events"
+
+    id = db.Column(db.Integer, primary_key=True)
+    call_id = db.Column(db.String(128), db.ForeignKey("call_logs.call_id"), nullable=False, index=True)
+    template_type = db.Column(db.String(64), nullable=False)
+    recipient = db.Column(db.String(255), nullable=False)
+    subject = db.Column(db.String(255), nullable=False)
+    body = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False, index=True)
+
+    call = db.relationship("CallLog", back_populates="email_events")
+
+
+class TransferEvent(db.Model):  # type: ignore[misc]
+    """Represents a transfer attempt for a call."""
+
+    __tablename__ = "transfer_events"
+
+    id = db.Column(db.Integer, primary_key=True)
+    call_id = db.Column(db.String(128), db.ForeignKey("call_logs.call_id"), nullable=False, index=True)
+    target_number = db.Column(db.String(64))
+    reason = db.Column(db.String(255))
+    notes = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False, index=True)
+
+    call = db.relationship("CallLog", back_populates="transfer_events")
 
 class EmailTemplateConfig(db.Model):  # type: ignore[misc]
     """Stores editable email templates for admin customization."""

@@ -290,6 +290,41 @@
             color: #111827;
             font-weight: 600;
         }
+        .event-section {
+            margin-top: 18px;
+            padding-top: 18px;
+            border-top: 1px solid #d7dffb;
+        }
+        .event-section h4 {
+            margin: 0 0 12px 0;
+            font-size: 13px;
+            color: #24335b;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .event-item {
+            background: white;
+            border-radius: 6px;
+            padding: 10px 12px;
+            border: 1px solid #e5e9ff;
+            margin-bottom: 10px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+        }
+        .event-time {
+            font-size: 12px;
+            color: #6b7a99;
+            margin-bottom: 4px;
+        }
+        .event-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #1b253d;
+        }
+        .event-meta {
+            font-size: 13px;
+            color: #4a5568;
+            margin-top: 4px;
+        }
         
         .empty-state {
             text-align: center;
@@ -445,6 +480,43 @@
                                 <dd>{{ log.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</dd>
                             </div>
                         </dl>
+
+                        {% if log.email_events %}
+                        <div class="event-section">
+                            <h4>Email Activity</h4>
+                            {% for event in log.email_events %}
+                            <div class="event-item">
+                                <div class="event-time">{{ event.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</div>
+                                <div class="event-title">{{ event.template_type.replace('_', ' ') | title }} → {{ event.recipient }}</div>
+                                <div class="event-meta">Subject: {{ event.subject }}</div>
+                                <details style="margin-top:6px;">
+                                    <summary style="cursor:pointer; font-size:12px; color:#4a65d3;">View body</summary>
+                                    <pre style="white-space:pre-wrap; font-size:12px; margin-top:6px; color:#2f3b52;">{{ event.body }}</pre>
+                                </details>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+
+                        {% if log.transfer_events %}
+                        <div class="event-section">
+                            <h4>Transfer Attempts</h4>
+                            {% for event in log.transfer_events %}
+                            <div class="event-item">
+                                <div class="event-time">{{ event.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</div>
+                                <div class="event-title">
+                                    {{ event.target_number or 'Unknown target' }}
+                                </div>
+                                {% if event.reason %}
+                                <div class="event-meta">Reason: {{ event.reason }}</div>
+                                {% endif %}
+                                {% if event.notes %}
+                                <div class="event-meta" style="margin-top:4px;">Notes: {{ event.notes }}</div>
+                                {% endif %}
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
                     </aside>
                 </div>
             </div>
