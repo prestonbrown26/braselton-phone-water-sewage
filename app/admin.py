@@ -9,7 +9,8 @@ from flask import Blueprint, Response, current_app, redirect, render_template, r
 from flask_login import login_required, login_user, logout_user, UserMixin
 
 from . import db, login_manager
-from .models import CallLog
+from .email_templates import DEFAULT_EMAIL_TEMPLATES, ensure_all_email_templates
+from .models import CallLog, EmailTemplateConfig
 
 
 admin_bp = Blueprint("admin", __name__)
@@ -139,4 +140,45 @@ def export_calls():
         headers={"Content-Disposition": "attachment; filename=braselton_call_logs.csv"},
     )
 
+
+@admin_bp.route("/admin/email-templates", methods=["GET", "POST"])
+@login_required
+def manage_email_templates():
+    """Allow admins to edit outbound email content."""
+
+    ensure_all_email_templates()
+
+    templates = {
+        tpl.template_type: tpl
+        for tpl in EmailTemplateConfig.query.order_by(EmailTemplateConfig.template_type).all()
+    }
+
+    if request.method == "POST":
+        updated = False
+        for template_type in DEFAULT_EMAIL_TEMPLATES:
+            subject = request.form.get(f"{template_type}_subject", "").strip()
+            body = request.form.get(f"{template_type}_body", "").strip()
+
+            tpl = templates.get(template_type)
+            if not tpl:
+                continue
+
+            defaults = DEFAULT_EMAIL_TEMPLATES[template_type]
+            tpl.subject = subject or defaults["subject"]
+            tpl.body = body or defaults["body"]
+            updated = True
+
+        if updated:
+            db.session.commit()
+            flash("Email templates updated successfully.", "success")
+        else:
+            flash("No changes detected.", "info")
+
+        return redirect(url_for("admin.manage_email_templates"))
+
+    return render_template(
+        "admin_email_templates.html",
+        templates=templates,
+        template_keys=list(DEFAULT_EMAIL_TEMPLATES.keys()),
+    )
 

@@ -12,8 +12,9 @@ from typing import Any
 
 from flask import Blueprint, current_app, jsonify, request
 
+from .email_templates import ensure_email_template
 from .email_utils import send_billing_email
-from .models import CallLog, db
+from .models import CallLog, EmailTemplateConfig, db
 
 main_bp = Blueprint("main", __name__)
 
@@ -175,75 +176,9 @@ def retell_transcript_webhook() -> Any:
 
 
 def get_email_template(email_type: str) -> tuple[str, str]:
-    """Get email subject and body based on type.
-    
-    Returns:
-        Tuple of (subject, body)
-    """
-    
-    website_url = current_app.config.get("TOWN_WEBSITE_URL", "https://braselton.net")
-    
-    templates = {
-        "payment_link": (
-            "Braselton Utilities - Online Payment Link",
-            f"""Hello,
+    """Return the stored email template, creating defaults if needed."""
 
-Thank you for contacting the Town of Braselton Utilities Department.
-
-To pay your utility bill online, please visit:
-{website_url}/pay
-
-Payment options:
-- Credit/debit card
-- E-check
-
-You can also pay in person at Town Hall (cash, check, or money order).
-
-Hours: Monday-Friday, 8:00 AM - 5:00 PM
-Address: 6111 Winder Highway, Braselton, GA 30517
-
-Questions? Call (770) 867-4488
-
-Town of Braselton Utilities
-""",
-        ),
-        "adjustment_form": (
-            "Braselton Utilities - Request for Adjustment Form",
-            f"""Hello,
-
-Please find the Request for Adjustment form here:
-{website_url}/utilities/adjustment-form
-
-Complete and return to:
-- Email: utilitybilling@braselton.net
-- In person: Braselton Town Hall
-
-We'll review your request within 3-5 business days.
-
-Questions? Call (770) 867-4488
-
-Town of Braselton Utilities
-""",
-        ),
-        "general_info": (
-            "Braselton Utilities - Contact Information",
-            f"""Hello,
-
-Thank you for contacting the Town of Braselton Utilities Department.
-
-For more information, please visit our website:
-{website_url}
-
-Contact Us:
-Phone: (770) 867-4488
-Email: utilitybilling@braselton.net
-Address: 6111 Winder Highway, Braselton, GA 30517
-
-Hours: Monday-Friday, 8:00 AM - 5:00 PM
-
-Town of Braselton Utilities
-""",
-        ),
-    }
-    
-    return templates.get(email_type, templates["general_info"])
+    template = EmailTemplateConfig.query.filter_by(template_type=email_type).first()
+    if not template:
+        template = ensure_email_template(email_type)
+    return template.subject, template.body

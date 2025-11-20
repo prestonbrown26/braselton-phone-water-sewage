@@ -58,3 +58,16 @@ class CallLog(db.Model):  # type: ignore[misc]
         }
 
 
+class EmailTemplateConfig(db.Model):  # type: ignore[misc]
+    """Stores editable email templates for admin customization."""
+
+    __tablename__ = "email_templates"
+
+    id = db.Column(db.Integer, primary_key=True)
+    template_type = db.Column(db.String(64), unique=True, nullable=False, index=True)
+    subject = db.Column(db.String(255), nullable=False)
+    body = db.Column(db.Text, nullable=False)
+    updated_at = db.Column(
+        db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False
+    )
+

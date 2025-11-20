@@ -1,0 +1,113 @@
+"""Email template defaults and helpers."""
+
+from __future__ import annotations
+
+from typing import Dict
+
+from .models import EmailTemplateConfig, db
+
+DEFAULT_EMAIL_TEMPLATES: Dict[str, Dict[str, str]] = {
+    "payment_link": {
+        "subject": "Braselton Utilities - Online Payment Link",
+        "body": """Hello,
+
+Thank you for contacting the Town of Braselton Utilities Department.
+
+To pay your utility bill online, please visit:
+https://braselton.net/pay
+
+Payment options:
+- Credit/debit card
+- E-check
+
+You can also pay in person at Town Hall (cash, check, or money order).
+
+Hours: Monday-Friday, 8:00 AM - 5:00 PM
+Address: 6111 Winder Highway, Braselton, GA 30517
+
+Questions? Call (770) 867-4488
+
+Town of Braselton Utilities
+""",
+    },
+    "adjustment_form": {
+        "subject": "Braselton Utilities - Request for Adjustment Form",
+        "body": """Hello,
+
+Please find the Request for Adjustment form here:
+https://braselton.net/utilities/adjustment-form
+
+Complete and return to:
+- Email: utilitybilling@braselton.net
+- In person: Braselton Town Hall
+
+We'll review your request within 3-5 business days.
+
+Questions? Call (770) 867-4488
+
+Town of Braselton Utilities
+""",
+    },
+    "general_info": {
+        "subject": "Braselton Utilities - Contact Information",
+        "body": """Hello,
+
+Thank you for contacting the Town of Braselton Utilities Department.
+
+For more information, please visit our website:
+https://braselton.net
+
+Contact Us:
+Phone: (770) 867-4488
+Email: utilitybilling@braselton.net
+Address: 6111 Winder Highway, Braselton, GA 30517
+
+Hours: Monday-Friday, 8:00 AM - 5:00 PM
+
+Town of Braselton Utilities
+""",
+    },
+}
+
+
+def _default_for(template_type: str) -> Dict[str, str]:
+    return DEFAULT_EMAIL_TEMPLATES.get(template_type, DEFAULT_EMAIL_TEMPLATES["general_info"])
+
+
+def ensure_email_template(template_type: str) -> EmailTemplateConfig:
+    """Return template from DB, creating with defaults if missing."""
+
+    template = EmailTemplateConfig.query.filter_by(template_type=template_type).first()
+    if template:
+        return template
+
+    defaults = _default_for(template_type)
+    template = EmailTemplateConfig(
+        template_type=template_type,
+        subject=defaults["subject"],
+        body=defaults["body"],
+    )
+    db.session.add(template)
+    db.session.commit()
+    return template
+
+
+def ensure_all_email_templates() -> None:
+    """Make sure all templates exist in the database."""
+
+    created = False
+    for template_type in DEFAULT_EMAIL_TEMPLATES:
+        if not EmailTemplateConfig.query.filter_by(template_type=template_type).first():
+            defaults = _default_for(template_type)
+            db.session.add(
+                EmailTemplateConfig(
+                    template_type=template_type,
+                    subject=defaults["subject"],
+                    body=defaults["body"],
+                )
+            )
+            created = True
+    if created:
+        db.session.commit()
+
+
