@@ -120,6 +120,11 @@
       <div class="brand">Braselton Utilities Admin</div>
       <nav>
         <a
+          href="{{ url_for('admin.dashboard') }}"
+          class="{{ 'active' if active_page == 'home' else '' }}"
+          >Dashboard</a
+        >
+        <a
           href="{{ url_for('admin.search_transcripts') }}"
           class="{{ 'active' if active_page == 'transcripts' else '' }}"
           >Transcripts</a

@@ -10,7 +10,7 @@ from flask_login import login_required, login_user, logout_user, UserMixin
 
 from . import db, login_manager
 from .email_templates import DEFAULT_EMAIL_TEMPLATES, ensure_all_email_templates
-from .models import CallLog, EmailTemplateConfig
+from .models import CallLog, EmailEvent, EmailTemplateConfig, TransferEvent
 
 
 admin_bp = Blueprint("admin", __name__)
@@ -46,7 +46,7 @@ def login():
             user = AdminUser("admin")
             login_user(user)
             next_page = request.args.get("next")
-            return redirect(next_page or url_for("admin.search_transcripts"))
+            return redirect(next_page or url_for("admin.dashboard"))
         else:
             flash("Invalid username or password", "error")
     
@@ -199,5 +199,29 @@ def call_detail(log_id: int):
         "admin_call_detail.html",
         log=log,
         active_page=None,
+    )
+
+
+@admin_bp.route("/admin", methods=["GET"])
+@login_required
+def dashboard():
+    """Admin landing page with quick links and stats."""
+
+    total_calls = CallLog.query.count()
+    latest_call = CallLog.query.order_by(CallLog.created_at.desc()).first()
+    total_emails = EmailEvent.query.count()
+    total_transfers = TransferEvent.query.count()
+    recent_calls = CallLog.query.order_by(CallLog.created_at.desc()).limit(5).all()
+
+    return render_template(
+        "admin_home.html",
+        stats={
+            "total_calls": total_calls,
+            "total_emails": total_emails,
+            "total_transfers": total_transfers,
+            "last_call_time": latest_call.created_at if latest_call else None,
+        },
+        recent_calls=recent_calls,
+        active_page="home",
     )
 
