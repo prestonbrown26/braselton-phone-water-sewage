@@ -117,7 +117,11 @@
   </head>
   <body>
     <header class="topbar">
-      <div class="brand">Braselton Utilities Admin</div>
+      <div class="brand">
+        <a href="{{ url_for('admin.dashboard') }}" style="text-decoration:none; color:inherit;">
+          Braselton Utilities Admin
+        </a>
+      </div>
       <nav>
         <a
           href="{{ url_for('admin.dashboard') }}"
