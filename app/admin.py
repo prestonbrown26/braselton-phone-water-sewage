@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import csv
 import io
+from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 
 from flask import Blueprint, Response, current_app, redirect, render_template, request, session, url_for, flash
 from flask_login import login_required, login_user, logout_user, UserMixin
@@ -14,6 +16,23 @@ from .models import CallLog, EmailEvent, EmailTemplateConfig, TransferEvent
 
 
 admin_bp = Blueprint("admin", __name__)
+EASTERN_TZ = ZoneInfo("America/New_York")
+
+
+def _format_eastern(dt: datetime | None) -> str:
+    if not dt:
+        return "—"
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(EASTERN_TZ).strftime("%Y-%m-%d %I:%M %p ET")
+
+
+def _annotate_call_log(log: CallLog) -> None:
+    log.display_time = _format_eastern(log.created_at)
+    for event in getattr(log, "email_events", []):
+        event.display_time = _format_eastern(event.created_at)
+    for event in getattr(log, "transfer_events", []):
+        event.display_time = _format_eastern(event.created_at)
 
 
 class AdminUser(UserMixin):
@@ -67,6 +86,8 @@ def admin_calls():
     """Render recent call logs for the admin portal."""
 
     logs = CallLog.query.order_by(CallLog.created_at.desc()).limit(200).all()
+    for log in logs:
+        _annotate_call_log(log)
     return render_template("admin_calls.html", logs=logs, active_page="calls")
 
 
@@ -90,7 +111,6 @@ def search_transcripts():
         query = query.filter(CallLog.caller_number.contains(phone))
     if date:
         # Search by date (YYYY-MM-DD format)
-        from datetime import datetime
         try:
             search_date = datetime.strptime(date, "%Y-%m-%d").date()
             query = query.filter(db.func.date(CallLog.created_at) == search_date)
@@ -98,6 +118,8 @@ def search_transcripts():
             pass  # Invalid date format, ignore
     
     results = query.order_by(CallLog.created_at.desc()).limit(100).all()
+    for log in results:
+        _annotate_call_log(log)
     
     return render_template(
         "admin_transcripts.html",
@@ -195,6 +217,7 @@ def call_detail(log_id: int):
     """Display full details for a specific call log."""
 
     log = CallLog.query.filter_by(id=log_id).first_or_404()
+    _annotate_call_log(log)
     return render_template(
         "admin_call_detail.html",
         log=log,
@@ -212,6 +235,8 @@ def dashboard():
     total_emails = EmailEvent.query.count()
     total_transfers = TransferEvent.query.count()
     recent_calls = CallLog.query.order_by(CallLog.created_at.desc()).limit(5).all()
+    for call in recent_calls:
+        _annotate_call_log(call)
 
     return render_template(
         "admin_home.html",
@@ -219,7 +244,7 @@ def dashboard():
             "total_calls": total_calls,
             "total_emails": total_emails,
             "total_transfers": total_transfers,
-            "last_call_time": latest_call.created_at if latest_call else None,
+            "last_call_time": _format_eastern(latest_call.created_at) if latest_call else "—",
         },
         recent_calls=recent_calls,
         active_page="home",

@@ -90,7 +90,7 @@
 <div class="card detail-page">
   <a class="back-link" href="{{ url_for('admin.search_transcripts') }}">← Back to transcripts</a>
   <h1>Call {{ log.call_id }}</h1>
-  <p class="subtitle">Recorded at {{ log.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</p>
+  <p class="subtitle">Recorded at {{ log.display_time }}</p>
 
   <div class="detail-layout">
     <section class="detail-main">
@@ -120,6 +120,10 @@
             <dt>Email Sent</dt>
             <dd>{{ 'Yes' if log.email_sent else 'No' }}</dd>
           </div>
+          <div>
+            <dt>Logged At</dt>
+            <dd>{{ log.display_time }}</dd>
+          </div>
         </dl>
       </div>
 
@@ -128,7 +132,7 @@
         <h3>Email Activity</h3>
         {% for event in log.email_events %}
         <div class="event-item">
-          <div class="event-time">{{ event.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</div>
+          <div class="event-time">{{ event.display_time }}</div>
           <div class="event-title">{{ event.template_type.replace('_',' ')|title }} → {{ event.recipient }}</div>
           <div>Subject: {{ event.subject }}</div>
           <details>
@@ -145,7 +149,7 @@
         <h3>Transfers</h3>
         {% for event in log.transfer_events %}
         <div class="event-item">
-          <div class="event-time">{{ event.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</div>
+          <div class="event-time">{{ event.display_time }}</div>
           <div class="event-title">{{ event.target_number or 'Unknown target' }}</div>
           {% if event.reason %}
           <div>Reason: {{ event.reason }}</div>

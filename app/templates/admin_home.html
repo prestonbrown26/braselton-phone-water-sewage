@@ -109,11 +109,7 @@
     <div class="stat-card">
       <span class="stat-label">Last Call Received</span>
       <div class="stat-value" style="font-size:20px;">
-        {% if stats.last_call_time %}
-          {{ stats.last_call_time.strftime('%Y-%m-%d %H:%M:%S') }}
-        {% else %}
-          —
-        {% endif %}
+        {{ stats.last_call_time }}
       </div>
     </div>
   </div>
@@ -159,7 +155,7 @@
         <td>{{ call.call_id }}</td>
         <td>{{ call.caller_number or 'Unknown' }}</td>
         <td>{{ call.duration_seconds or 'n/a' }}s</td>
-        <td>{{ call.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+        <td>{{ call.display_time }}</td>
         <td>
           <a href="{{ url_for('admin.call_detail', log_id=call.id) }}" style="color: var(--brand); font-weight:600;">
             View

@@ -307,7 +307,7 @@
         <div class="call-id">{{ log.call_id }}</div>
         <div class="meta-row">
           <span class="meta-item">
-            📅 {{ log.created_at.strftime('%Y-%m-%d %H:%M:%S') }}
+            📅 {{ log.display_time }}
           </span>
           {% if log.caller_number %}
           <span class="meta-item"> 📞 {{ log.caller_number }} </span>
@@ -369,7 +369,7 @@
           </div>
           <div>
             <dt>Logged At</dt>
-            <dd>{{ log.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</dd>
+            <dd>{{ log.display_time }}</dd>
           </div>
         </dl>
 
@@ -378,7 +378,7 @@
           <h4>Email Activity</h4>
           {% for event in log.email_events %}
           <div class="event-item">
-            <div class="event-time">{{ event.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</div>
+            <div class="event-time">{{ event.display_time }}</div>
             <div class="event-title">
               {{ event.template_type.replace('_', ' ') | title }} →
               {{ event.recipient }}
@@ -396,7 +396,7 @@
           <h4>Transfer Attempts</h4>
           {% for event in log.transfer_events %}
           <div class="event-item">
-            <div class="event-time">{{ event.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</div>
+            <div class="event-time">{{ event.display_time }}</div>
             <div class="event-title">{{ event.target_number or 'Unknown target' }}</div>
             {% if event.reason %}
             <div class="event-meta">Reason: {{ event.reason }}</div>
