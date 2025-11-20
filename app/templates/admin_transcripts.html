@@ -321,7 +321,21 @@
                     </div>
                 </div>
                 
-                <div class="transcript-text">{{ log.transcript }}</div>
+                <div class="transcript-text">
+                    {{ log.transcript }}
+                    <div style="margin-top: 15px; font-size: 13px; color: #7f8c8d;">
+                        <strong>Call Details:</strong>
+                        <ul style="margin: 8px 0 0 18px;">
+                            <li><strong>Call ID:</strong> {{ log.call_id }}</li>
+                            <li><strong>Caller Number:</strong> {{ log.caller_number or 'Unknown' }}</li>
+                            <li><strong>Duration:</strong> {{ log.duration_seconds or 'n/a' }} seconds</li>
+                            <li><strong>Sentiment:</strong> {{ log.sentiment or 'neutral' }}</li>
+                            <li><strong>Transferred:</strong> {{ 'Yes' if log.transferred else 'No' }}</li>
+                            <li><strong>Email Sent:</strong> {{ 'Yes' if log.email_sent else 'No' }}</li>
+                            <li><strong>Logged At:</strong> {{ log.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</li>
+                        </ul>
+                    </div>
+                </div>
             </div>
             {% endfor %}
         {% else %}
