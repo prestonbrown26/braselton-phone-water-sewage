@@ -74,8 +74,26 @@ def handle_email_request() -> Any:
         
         # Mark email sent in call log if it exists
         call_log = CallLog.query.filter_by(call_id=call_id).first()
-        if call_log:
-            call_log.email_sent = True
+        if not call_log:
+            placeholder_text = (
+                "Call log placeholder created automatically because the email webhook "
+                "arrived before the transcript webhook."
+            )
+            call_log = CallLog(
+                call_id=call_id,
+                caller_number=args.get("caller_phone"),
+                transcript=placeholder_text,
+                sentiment="neutral",
+                transferred=False,
+                email_sent=False,
+                created_at=datetime.utcnow(),
+            )
+            db.session.add(call_log)
+            current_app.logger.warning(
+                "Created placeholder call log for %s because email arrived before transcript.",
+                call_id,
+            )
+        call_log.email_sent = True
         email_event = EmailEvent(
             call_id=call_id,
             template_type=email_type,
