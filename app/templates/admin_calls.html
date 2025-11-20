@@ -1,90 +1,105 @@
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <title>Braselton AI Agent – Call Logs</title>
-    <style>
-      body {
-        font-family: Arial, sans-serif;
-        margin: 2rem;
-        background-color: #f5f7fb;
-      }
-      h1 {
-        color: #1b3d6d;
-      }
-      table {
-        width: 100%;
-        border-collapse: collapse;
-        background-color: #fff;
-        box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
-      }
-      th, td {
-        padding: 0.75rem;
-        border-bottom: 1px solid #e0e6f0;
-        text-align: left;
-      }
-      th {
-        background-color: #23395b;
-        color: #fff;
-      }
-      tbody tr:nth-child(even) {
-        background-color: #f0f4ff;
-      }
-      .badge {
-        padding: 0.25rem 0.5rem;
-        border-radius: 4px;
-        font-size: 0.85rem;
-        color: #fff;
-      }
-      .badge-positive { background-color: #2d7a2d; }
-      .badge-neutral { background-color: #6c757d; }
-      .badge-negative { background-color: #c53030; }
-    </style>
-  </head>
-  <body>
-    <h1>Call Logs</h1>
-    <p>Showing the most recent interactions handled by the AI agent.</p>
-    <table>
-      <thead>
-        <tr>
-          <th>Call ID</th>
-          <th>Caller</th>
-          <th>Transcript</th>
-          <th>Sentiment</th>
-          <th>Email Sent</th>
-          <th>Created At</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for log in logs %}
-        <tr>
-          <td>{{ log.call_id }}</td>
-          <td>{{ log.caller_number or "Unknown" }}</td>
-          <td>{{ log.transcript }}</td>
-          <td>
-            {% if log.sentiment_score is not none %}
-              {% set score = log.sentiment_score %}
-              {% if score > 0.1 %}
-                <span class="badge badge-positive">{{ '%.2f'|format(score) }}</span>
-              {% elif score < -0.1 %}
-                <span class="badge badge-negative">{{ '%.2f'|format(score) }}</span>
-              {% else %}
-                <span class="badge badge-neutral">{{ '%.2f'|format(score) }}</span>
-              {% endif %}
+{% extends "admin_base.html" %}
+{% block title %}Call Logs - Braselton Utilities{% endblock %}
+{% block extra_css %}
+<style>
+  .calls-page h1 {
+    color: #1f2a48;
+    margin-bottom: 6px;
+  }
+  .calls-page .subtitle {
+    color: #6b7280;
+    margin-bottom: 20px;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 8px 30px rgba(15, 23, 42, 0.05);
+  }
+  th,
+  td {
+    padding: 0.85rem;
+    border-bottom: 1px solid var(--border);
+    text-align: left;
+    font-size: 14px;
+  }
+  th {
+    background: var(--brand);
+    color: #fff;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+  }
+  tbody tr:nth-child(even) {
+    background-color: #f7f8ff;
+  }
+  .badge {
+    padding: 0.25rem 0.55rem;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #fff;
+  }
+  .badge-positive {
+    background-color: #16a34a;
+  }
+  .badge-neutral {
+    background-color: #94a3b8;
+  }
+  .badge-negative {
+    background-color: #dc2626;
+  }
+</style>
+{% endblock %}
+{% block content %}
+<div class="card calls-page">
+  <h1>Call Logs</h1>
+  <p class="subtitle">Recent interactions handled by the AI agent</p>
+  <table>
+    <thead>
+      <tr>
+        <th>Call ID</th>
+        <th>Caller</th>
+        <th>Transcript</th>
+        <th>Sentiment</th>
+        <th>Email Sent</th>
+        <th>Created At</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for log in logs %}
+      <tr>
+        <td>{{ log.call_id }}</td>
+        <td>{{ log.caller_number or "Unknown" }}</td>
+        <td style="max-width: 380px; white-space: pre-line">
+          {{ log.transcript[:350] }}{% if log.transcript|length > 350 %}…{% endif %}
+        </td>
+        <td>
+          {% if log.sentiment %}
+            {% if log.sentiment == 'positive' %}
+              <span class="badge badge-positive">Positive</span>
+            {% elif log.sentiment == 'negative' %}
+              <span class="badge badge-negative">Negative</span>
             {% else %}
-              <span class="badge badge-neutral">n/a</span>
+              <span class="badge badge-neutral">Neutral</span>
             {% endif %}
-          </td>
-          <td>{{ 'Yes' if log.email_sent else 'No' }}</td>
-          <td>{{ log.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
-        </tr>
-        {% else %}
-        <tr>
-          <td colspan="6">No call logs recorded yet.</td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </body>
-</html>
+          {% else %}
+            <span class="badge badge-neutral">n/a</span>
+          {% endif %}
+        </td>
+        <td>{{ 'Yes' if log.email_sent else 'No' }}</td>
+        <td>{{ log.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+      </tr>
+      {% else %}
+      <tr>
+        <td colspan="6">No call logs recorded yet.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
+
 

@@ -1,540 +1,409 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Call Transcript Search - Braselton Utilities</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-            background: #f5f5f5;
-            padding: 20px;
-        }
-        
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            background: white;
-            padding: 30px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        
-        h1 {
-            color: #2c3e50;
-            margin-bottom: 10px;
-        }
-        
-        .subtitle {
-            color: #7f8c8d;
-            margin-bottom: 30px;
-        }
-        
-        .search-form {
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 6px;
-            margin-bottom: 30px;
-        }
-        
-        .form-row {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin-bottom: 15px;
-        }
-        
-        .form-group {
-            display: flex;
-            flex-direction: column;
-        }
-        
-        label {
-            font-size: 14px;
-            font-weight: 600;
-            color: #495057;
-            margin-bottom: 5px;
-        }
-        
-        input[type="text"],
-        input[type="date"] {
-            padding: 10px;
-            border: 1px solid #ced4da;
-            border-radius: 4px;
-            font-size: 14px;
-        }
-        
-        input[type="text"]:focus,
-        input[type="date"]:focus {
-            outline: none;
-            border-color: #3498db;
-        }
-        
-        .button-group {
-            display: flex;
-            gap: 10px;
-        }
-        
-        button {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 4px;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
-        
-        .btn-primary {
-            background: #3498db;
-            color: white;
-        }
-        
-        .btn-primary:hover {
-            background: #2980b9;
-        }
-        
-        .btn-secondary {
-            background: #95a5a6;
-            color: white;
-        }
-        
-        .btn-secondary:hover {
-            background: #7f8c8d;
-        }
-        
-        .results-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-        
-        .results-count {
-            color: #7f8c8d;
-            font-size: 14px;
-        }
-        
-        .transcript-card {
-            background: #fff;
-            border: 1px solid #e0e0e0;
-            border-radius: 6px;
-            padding: 20px;
-            margin-bottom: 15px;
-            transition: box-shadow 0.2s;
-        }
-        
-        .transcript-card:hover {
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        }
-        .transcript-layout {
-            display: grid;
-            grid-template-columns: minmax(0, 1fr) 260px;
-            gap: 20px;
-        }
-        .transcript-sidebar {
-            background: #f0f4ff;
-            border-radius: 6px;
-            padding: 15px;
-            border: 1px solid #dce4ff;
-        }
-        .transcript-sidebar h3 {
-            margin-top: 0;
-            font-size: 15px;
-            color: #1f3b73;
-            margin-bottom: 12px;
-        }
-        .transcript-sidebar dl {
-            margin: 0;
-        }
-        .transcript-sidebar dl div {
-            margin-bottom: 10px;
-        }
-        .transcript-sidebar dt {
-            font-size: 12px;
-            color: #6b7a99;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 2px;
-        }
-        .transcript-sidebar dd {
-            margin: 0;
-            font-size: 14px;
-            color: #1f2937;
-            font-weight: 600;
-        }
-        
-        .card-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: start;
-            margin-bottom: 15px;
-            padding-bottom: 15px;
-            border-bottom: 1px solid #e0e0e0;
-        }
-        
-        .card-meta {
-            flex: 1;
-        }
-        
-        .call-id {
-            font-family: 'Courier New', monospace;
-            color: #2c3e50;
-            font-weight: 600;
-            margin-bottom: 5px;
-        }
-        
-        .meta-row {
-            display: flex;
-            gap: 20px;
-            font-size: 13px;
-            color: #7f8c8d;
-            margin-top: 5px;
-        }
-        
-        .meta-item {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-        
-        .badge {
-            display: inline-block;
-            padding: 4px 10px;
-            border-radius: 12px;
-            font-size: 12px;
-            font-weight: 600;
-        }
-        
-        .badge-positive {
-            background: #d4edda;
-            color: #155724;
-        }
-        
-        .badge-neutral {
-            background: #fff3cd;
-            color: #856404;
-        }
-        
-        .badge-negative {
-            background: #f8d7da;
-            color: #721c24;
-        }
-        
-        .badge-transferred {
-            background: #d1ecf1;
-            color: #0c5460;
-        }
-        
-        .badge-email {
-            background: #cce5ff;
-            color: #004085;
-        }
-        
-        .transcript-layout {
-            display: flex;
-            gap: 24px;
-            flex-wrap: wrap;
-        }
-        .transcript-text {
-            background: #f8f9fa;
-            padding: 18px;
-            border-radius: 6px;
-            white-space: pre-line;
-            font-size: 14px;
-            line-height: 1.7;
-            color: #394454;
-            flex: 2 1 60%;
-            min-width: 280px;
-            overflow-wrap: anywhere;
-        }
-        .transcript-sidebar {
-            background: #edf1ff;
-            border-radius: 6px;
-            padding: 18px;
-            border: 1px solid #d7dffb;
-            flex: 1 1 240px;
-            min-width: 240px;
-            max-width: 320px;
-            height: fit-content;
-            box-shadow: inset 0 1px 0 rgba(255,255,255,0.4);
-        }
-        .transcript-sidebar h3 {
-            margin-top: 0;
-            font-size: 15px;
-            color: #1d2b5c;
-            margin-bottom: 14px;
-        }
-        .transcript-sidebar dl {
-            margin: 0;
-        }
-        .transcript-sidebar dl div {
-            margin-bottom: 12px;
-        }
-        .transcript-sidebar dt {
-            font-size: 11px;
-            color: #6c789b;
-            text-transform: uppercase;
-            letter-spacing: 0.6px;
-            margin-bottom: 3px;
-        }
-        .transcript-sidebar dd {
-            margin: 0;
-            font-size: 14px;
-            color: #111827;
-            font-weight: 600;
-        }
-        .event-section {
-            margin-top: 18px;
-            padding-top: 18px;
-            border-top: 1px solid #d7dffb;
-        }
-        .event-section h4 {
-            margin: 0 0 12px 0;
-            font-size: 13px;
-            color: #24335b;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        .event-item {
-            background: white;
-            border-radius: 6px;
-            padding: 10px 12px;
-            border: 1px solid #e5e9ff;
-            margin-bottom: 10px;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.04);
-        }
-        .event-time {
-            font-size: 12px;
-            color: #6b7a99;
-            margin-bottom: 4px;
-        }
-        .event-title {
-            font-size: 14px;
-            font-weight: 600;
-            color: #1b253d;
-        }
-        .event-meta {
-            font-size: 13px;
-            color: #4a5568;
-            margin-top: 4px;
-        }
-        
-        .empty-state {
-            text-align: center;
-            padding: 60px 20px;
-            color: #7f8c8d;
-        }
-        
-        .empty-state svg {
-            width: 64px;
-            height: 64px;
-            margin-bottom: 20px;
-            opacity: 0.3;
-        }
-        
-        .nav-link {
-            display: inline-block;
-            margin-top: 20px;
-            color: #3498db;
-            text-decoration: none;
-            font-size: 14px;
-        }
-        
-        .nav-link:hover {
-            text-decoration: underline;
-        }
-        @media (max-width: 768px) {
-            .transcript-layout {
-                flex-direction: column;
-            }
-            .transcript-text,
-            .transcript-sidebar {
-                flex: 1 1 100%;
-                max-width: 100%;
-            }
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>📞 Call Transcript Search</h1>
-        <p class="subtitle">Search and review call logs (5-year retention per GA law LG 20-022)</p>
-        
-        <form class="search-form" method="GET" action="/admin/transcripts">
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="call_id">Call ID</label>
-                    <input type="text" id="call_id" name="call_id" 
-                           placeholder="Enter call ID" 
-                           value="{{ search_params.call_id }}">
-                </div>
-                
-                <div class="form-group">
-                    <label for="phone">Phone Number</label>
-                    <input type="text" id="phone" name="phone" 
-                           placeholder="Enter phone number" 
-                           value="{{ search_params.phone }}">
-                </div>
-                
-                <div class="form-group">
-                    <label for="date">Date</label>
-                    <input type="date" id="date" name="date" 
-                           value="{{ search_params.date }}">
-                </div>
-            </div>
-            
-            <div class="button-group">
-                <button type="submit" class="btn-primary">🔍 Search</button>
-                <button type="button" class="btn-secondary" onclick="window.location.href='/admin/transcripts'">
-                    Clear
-                </button>
-            </div>
-        </form>
-        
-        <div class="results-header">
-            <h2>Results</h2>
-            <span class="results-count">{{ results|length }} call(s) found</span>
-        </div>
-        
-        {% if results %}
-            {% for log in results %}
-            <div class="transcript-card">
-                <div class="card-header">
-                    <div class="card-meta">
-                        <div class="call-id">{{ log.call_id }}</div>
-                        <div class="meta-row">
-                            <span class="meta-item">
-                                📅 {{ log.created_at.strftime('%Y-%m-%d %H:%M:%S') }}
-                            </span>
-                            {% if log.caller_number %}
-                            <span class="meta-item">
-                                📞 {{ log.caller_number }}
-                            </span>
-                            {% endif %}
-                            {% if log.duration_seconds %}
-                            <span class="meta-item">
-                                ⏱️ {{ log.duration_seconds }}s
-                            </span>
-                            {% endif %}
-                        </div>
-                    </div>
-                    <div style="display: flex; gap: 5px; flex-wrap: wrap;">
-                        {% if log.sentiment == 'positive' %}
-                        <span class="badge badge-positive">😊 Positive</span>
-                        {% elif log.sentiment == 'negative' %}
-                        <span class="badge badge-negative">😟 Negative</span>
-                        {% else %}
-                        <span class="badge badge-neutral">😐 Neutral</span>
-                        {% endif %}
-                        
-                        {% if log.transferred %}
-                        <span class="badge badge-transferred">🔄 Transferred</span>
-                        {% endif %}
-                        
-                        {% if log.email_sent %}
-                        <span class="badge badge-email">📧 Email Sent</span>
-                        {% endif %}
-                    </div>
-                </div>
-                
-                <div class="transcript-layout">
-                    <div class="transcript-text">
-                        {{ log.transcript }}
-                    </div>
-                    <aside class="transcript-sidebar">
-                        <h3>Call Details</h3>
-                        <dl>
-                            <div>
-                                <dt>Call ID</dt>
-                                <dd>{{ log.call_id }}</dd>
-                            </div>
-                            <div>
-                                <dt>Caller</dt>
-                                <dd>{{ log.caller_number or 'Unknown' }}</dd>
-                            </div>
-                            <div>
-                                <dt>Duration</dt>
-                                <dd>{{ log.duration_seconds or 'n/a' }} seconds</dd>
-                            </div>
-                            <div>
-                                <dt>Sentiment</dt>
-                                <dd>{{ log.sentiment or 'neutral' }}</dd>
-                            </div>
-                            <div>
-                                <dt>Transferred</dt>
-                                <dd>{{ 'Yes' if log.transferred else 'No' }}</dd>
-                            </div>
-                            <div>
-                                <dt>Email Sent</dt>
-                                <dd>{{ 'Yes' if log.email_sent else 'No' }}</dd>
-                            </div>
-                            <div>
-                                <dt>Logged At</dt>
-                                <dd>{{ log.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</dd>
-                            </div>
-                        </dl>
+{% extends "admin_base.html" %}
+{% block title %}Call Transcripts - Braselton Utilities{% endblock %}
+{% block extra_css %}
+<style>
+  .transcript-page h1 {
+    color: #2c3e50;
+    margin-bottom: 6px;
+  }
+  .transcript-page .subtitle {
+    color: #7f8c8d;
+    margin-bottom: 24px;
+  }
+  .search-form {
+    background: #f8f9fa;
+    padding: 18px;
+    border-radius: 10px;
+    border: 1px solid #e3e8f4;
+    margin-bottom: 24px;
+  }
+  .form-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 14px;
+    margin-bottom: 14px;
+  }
+  .form-group label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #4b5671;
+    margin-bottom: 4px;
+  }
+  .form-group input {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 1px solid #ccd4e5;
+    font-size: 14px;
+  }
+  .form-group input:focus {
+    outline: none;
+    border-color: var(--brand);
+    box-shadow: 0 0 0 2px rgba(31, 59, 115, 0.12);
+  }
+  .button-group {
+    display: flex;
+    gap: 10px;
+  }
+  .button-group button {
+    border: none;
+    border-radius: 8px;
+    padding: 10px 18px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .btn-primary {
+    background: var(--brand);
+    color: white;
+  }
+  .btn-secondary {
+    background: #dfe4f4;
+    color: #1f2a48;
+  }
+  .results-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+  }
+  .results-count {
+    color: #68738c;
+    font-size: 14px;
+  }
+  .transcript-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 8px 30px rgba(15, 23, 42, 0.04);
+  }
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 14px;
+    margin-bottom: 18px;
+  }
+  .call-id {
+    font-family: 'JetBrains Mono', 'Courier New', monospace;
+    font-size: 14px;
+    color: var(--brand);
+    font-weight: 600;
+  }
+  .meta-row {
+    display: flex;
+    gap: 18px;
+    flex-wrap: wrap;
+    font-size: 13px;
+    color: #59607a;
+    margin-top: 4px;
+  }
+  .badge {
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .badge-positive { background: #dcfce7; color: #166534; }
+  .badge-neutral { background: #fef9c3; color: #854d0e; }
+  .badge-negative { background: #fee2e2; color: #b91c1c; }
+  .badge-transferred { background: #e0f2fe; color: #0c4a6e; }
+  .badge-email { background: #dbeafe; color: #1d4ed8; }
+  .transcript-layout {
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+  .transcript-text {
+    background: #f8f9fc;
+    border-radius: 10px;
+    padding: 18px;
+    flex: 2 1 60%;
+    min-width: 280px;
+    white-space: pre-line;
+    line-height: 1.7;
+    color: #2e3347;
+    border: 1px solid #ecf0fb;
+    overflow-wrap: anywhere;
+  }
+  .transcript-sidebar {
+    background: #edf1ff;
+    border: 1px solid #d7dffb;
+    border-radius: 10px;
+    padding: 18px;
+    flex: 1 1 240px;
+    min-width: 240px;
+    max-width: 320px;
+    height: fit-content;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.4);
+  }
+  .transcript-sidebar h3 {
+    margin: 0 0 12px 0;
+    font-size: 15px;
+    color: #1c2762;
+  }
+  .transcript-sidebar dl {
+    margin: 0;
+  }
+  .transcript-sidebar dl div {
+    margin-bottom: 12px;
+  }
+  .transcript-sidebar dt {
+    font-size: 11px;
+    color: #69739a;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 3px;
+  }
+  .transcript-sidebar dd {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: #101828;
+    word-break: break-word;
+  }
+  .event-section {
+    margin-top: 18px;
+    padding-top: 18px;
+    border-top: 1px solid #d7dffb;
+  }
+  .event-section h4 {
+    margin: 0 0 10px;
+    font-size: 13px;
+    color: #24335b;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+  }
+  .event-item {
+    background: white;
+    border-radius: 8px;
+    padding: 10px 12px;
+    border: 1px solid #e5eafe;
+    margin-bottom: 10px;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
+  }
+  .event-time {
+    font-size: 11px;
+    color: #6b7496;
+    margin-bottom: 4px;
+  }
+  .event-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #18243f;
+  }
+  .event-meta {
+    font-size: 13px;
+    color: #4a5672;
+    margin-top: 4px;
+    word-break: break-word;
+  }
+  details summary {
+    cursor: pointer;
+    font-size: 12px;
+    color: #4456c4;
+  }
+  details pre {
+    white-space: pre-wrap;
+    font-size: 12px;
+    margin: 6px 0 0 0;
+    background: #f3f4ff;
+    padding: 8px;
+    border-radius: 6px;
+  }
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: #7f8c8d;
+  }
+  @media (max-width: 768px) {
+    .transcript-layout {
+      flex-direction: column;
+    }
+    .transcript-text,
+    .transcript-sidebar {
+      flex: 1 1 100%;
+      max-width: 100%;
+    }
+  }
+</style>
+{% endblock %}
+{% block content %}
+<div class="card transcript-page">
+  <h1>📞 Call Transcript Search</h1>
+  <p class="subtitle">
+    Search and review call logs (5-year retention per GA law LG 20-022)
+  </p>
 
-                        {% if log.email_events %}
-                        <div class="event-section">
-                            <h4>Email Activity</h4>
-                            {% for event in log.email_events %}
-                            <div class="event-item">
-                                <div class="event-time">{{ event.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</div>
-                                <div class="event-title">{{ event.template_type.replace('_', ' ') | title }} → {{ event.recipient }}</div>
-                                <div class="event-meta">Subject: {{ event.subject }}</div>
-                                <details style="margin-top:6px;">
-                                    <summary style="cursor:pointer; font-size:12px; color:#4a65d3;">View body</summary>
-                                    <pre style="white-space:pre-wrap; font-size:12px; margin-top:6px; color:#2f3b52;">{{ event.body }}</pre>
-                                </details>
-                            </div>
-                            {% endfor %}
-                        </div>
-                        {% endif %}
+  <form class="search-form" method="GET" action="/admin/transcripts">
+    <div class="form-row">
+      <div class="form-group">
+        <label for="call_id">Call ID</label>
+        <input
+          type="text"
+          id="call_id"
+          name="call_id"
+          placeholder="Enter call ID"
+          value="{{ search_params.call_id }}"
+        />
+      </div>
 
-                        {% if log.transfer_events %}
-                        <div class="event-section">
-                            <h4>Transfer Attempts</h4>
-                            {% for event in log.transfer_events %}
-                            <div class="event-item">
-                                <div class="event-time">{{ event.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</div>
-                                <div class="event-title">
-                                    {{ event.target_number or 'Unknown target' }}
-                                </div>
-                                {% if event.reason %}
-                                <div class="event-meta">Reason: {{ event.reason }}</div>
-                                {% endif %}
-                                {% if event.notes %}
-                                <div class="event-meta" style="margin-top:4px;">Notes: {{ event.notes }}</div>
-                                {% endif %}
-                            </div>
-                            {% endfor %}
-                        </div>
-                        {% endif %}
-                    </aside>
-                </div>
-            </div>
-            {% endfor %}
-        {% else %}
-            <div class="empty-state">
-                <svg fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"></path>
-                </svg>
-                <h3>No calls found</h3>
-                <p>Try adjusting your search criteria</p>
-            </div>
-        {% endif %}
-        
-        <a href="/admin/calls" class="nav-link">← Back to all calls</a>
-        <span style="margin: 0 10px; color: #dee2e6;">|</span>
-        <a href="/admin/export" class="nav-link">📥 Export all as CSV</a>
+      <div class="form-group">
+        <label for="phone">Phone Number</label>
+        <input
+          type="text"
+          id="phone"
+          name="phone"
+          placeholder="Enter phone number"
+          value="{{ search_params.phone }}"
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="date">Date</label>
+        <input type="date" id="date" name="date" value="{{ search_params.date }}" />
+      </div>
     </div>
-</body>
-</html>
+
+    <div class="button-group">
+      <button type="submit" class="btn-primary">🔍 Search</button>
+      <button
+        type="button"
+        class="btn-secondary"
+        onclick="window.location.href='/admin/transcripts'"
+      >
+        Clear
+      </button>
+    </div>
+  </form>
+
+  <div class="results-header">
+    <h2>Results</h2>
+    <span class="results-count">{{ results|length }} call(s) found</span>
+  </div>
+
+  {% if results %} {% for log in results %}
+  <div class="transcript-card">
+    <div class="card-header">
+      <div class="card-meta">
+        <div class="call-id">{{ log.call_id }}</div>
+        <div class="meta-row">
+          <span class="meta-item">
+            📅 {{ log.created_at.strftime('%Y-%m-%d %H:%M:%S') }}
+          </span>
+          {% if log.caller_number %}
+          <span class="meta-item"> 📞 {{ log.caller_number }} </span>
+          {% endif %} {% if log.duration_seconds %}
+          <span class="meta-item"> ⏱️ {{ log.duration_seconds }}s </span>
+          {% endif %}
+        </div>
+      </div>
+      <div style="display: flex; gap: 6px; flex-wrap: wrap">
+        {% if log.sentiment == 'positive' %}
+        <span class="badge badge-positive">Positive</span>
+        {% elif log.sentiment == 'negative' %}
+        <span class="badge badge-negative">Negative</span>
+        {% else %}
+        <span class="badge badge-neutral">Neutral</span>
+        {% endif %} {% if log.transferred %}
+        <span class="badge badge-transferred">Transferred</span>
+        {% endif %} {% if log.email_sent %}
+        <span class="badge badge-email">Email Sent</span>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="transcript-layout">
+      <div class="transcript-text">
+        {{ log.transcript }}
+      </div>
+      <aside class="transcript-sidebar">
+        <h3>Call Details</h3>
+        <dl>
+          <div>
+            <dt>Call ID</dt>
+            <dd>{{ log.call_id }}</dd>
+          </div>
+          <div>
+            <dt>Caller</dt>
+            <dd>{{ log.caller_number or 'Unknown' }}</dd>
+          </div>
+          <div>
+            <dt>Duration</dt>
+            <dd>{{ log.duration_seconds or 'n/a' }} seconds</dd>
+          </div>
+          <div>
+            <dt>Sentiment</dt>
+            <dd>{{ log.sentiment or 'neutral' }}</dd>
+          </div>
+          <div>
+            <dt>Transferred</dt>
+            <dd>{{ 'Yes' if log.transferred else 'No' }}</dd>
+          </div>
+          <div>
+            <dt>Email Sent</dt>
+            <dd>{{ 'Yes' if log.email_sent else 'No' }}</dd>
+          </div>
+          <div>
+            <dt>Logged At</dt>
+            <dd>{{ log.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</dd>
+          </div>
+        </dl>
+
+        {% if log.email_events %}
+        <div class="event-section">
+          <h4>Email Activity</h4>
+          {% for event in log.email_events %}
+          <div class="event-item">
+            <div class="event-time">{{ event.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</div>
+            <div class="event-title">
+              {{ event.template_type.replace('_', ' ') | title }} →
+              {{ event.recipient }}
+            </div>
+            <div class="event-meta">Subject: {{ event.subject }}</div>
+            <details style="margin-top: 6px">
+              <summary>View body</summary>
+              <pre>{{ event.body }}</pre>
+            </details>
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %} {% if log.transfer_events %}
+        <div class="event-section">
+          <h4>Transfer Attempts</h4>
+          {% for event in log.transfer_events %}
+          <div class="event-item">
+            <div class="event-time">{{ event.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</div>
+            <div class="event-title">{{ event.target_number or 'Unknown target' }}</div>
+            {% if event.reason %}
+            <div class="event-meta">Reason: {{ event.reason }}</div>
+            {% endif %} {% if event.notes %}
+            <div class="event-meta" style="margin-top: 4px">Notes: {{ event.notes }}</div>
+            {% endif %}
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+      </aside>
+    </div>
+  </div>
+  {% endfor %} {% else %}
+  <div class="empty-state">
+    <svg fill="currentColor" viewBox="0 0 20 20">
+      <path
+        fill-rule="evenodd"
+        d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z"
+        clip-rule="evenodd"
+      ></path>
+    </svg>
+    <h3>No calls found</h3>
+    <p>Try adjusting your search criteria</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+
 

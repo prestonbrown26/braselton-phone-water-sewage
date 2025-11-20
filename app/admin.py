@@ -67,7 +67,7 @@ def admin_calls():
     """Render recent call logs for the admin portal."""
 
     logs = CallLog.query.order_by(CallLog.created_at.desc()).limit(200).all()
-    return render_template("admin_calls.html", logs=logs)
+    return render_template("admin_calls.html", logs=logs, active_page="calls")
 
 
 @admin_bp.route("/admin/transcripts", methods=["GET"])
@@ -99,11 +99,16 @@ def search_transcripts():
     
     results = query.order_by(CallLog.created_at.desc()).limit(100).all()
     
-    return render_template("admin_transcripts.html", results=results, search_params={
-        "call_id": call_id or "",
-        "phone": phone or "",
-        "date": date or "",
-    })
+    return render_template(
+        "admin_transcripts.html",
+        results=results,
+        search_params={
+            "call_id": call_id or "",
+            "phone": phone or "",
+            "date": date or "",
+        },
+        active_page="transcripts",
+    )
 
 
 @admin_bp.route("/admin/export", methods=["GET"])
@@ -180,5 +185,6 @@ def manage_email_templates():
         "admin_email_templates.html",
         templates=templates,
         template_keys=list(DEFAULT_EMAIL_TEMPLATES.keys()),
+        active_page="templates",
     )
 
