@@ -143,6 +143,11 @@
           class="{{ 'active' if active_page == 'templates' else '' }}"
           >Email Templates</a
         >
+        <a
+          href="{{ url_for('admin.manage_users') }}"
+          class="{{ 'active' if active_page == 'users' else '' }}"
+          >Users</a
+        >
         <a href="{{ url_for('admin.logout') }}">Logout</a>
       </nav>
     </header>

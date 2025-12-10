@@ -8,11 +8,11 @@ from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
 
 from flask import Blueprint, Response, current_app, redirect, render_template, request, session, url_for, flash
-from flask_login import login_required, login_user, logout_user, UserMixin
+from flask_login import login_required, login_user, logout_user
 
 from . import db, login_manager
 from .email_templates import DEFAULT_EMAIL_TEMPLATES, ensure_all_email_templates
-from .models import CallLog, EmailEvent, EmailTemplateConfig, TransferEvent
+from .models import CallLog, EmailEvent, EmailTemplateConfig, TransferEvent, User
 
 
 admin_bp = Blueprint("admin", __name__)
@@ -35,19 +35,13 @@ def _annotate_call_log(log: CallLog) -> None:
         event.display_time = _format_eastern(event.created_at)
 
 
-class AdminUser(UserMixin):
-    """Simple user class for admin authentication."""
-    
-    def __init__(self, user_id):
-        self.id = user_id
-
-
 @login_manager.user_loader
 def load_user(user_id):
     """Load user for Flask-Login."""
-    if user_id == "admin":
-        return AdminUser(user_id)
-    return None
+    try:
+        return User.query.get(int(user_id))
+    except Exception:
+        return None
 
 
 @admin_bp.route("/admin/login", methods=["GET", "POST"])
@@ -57,12 +51,14 @@ def login():
     if request.method == "POST":
         username = request.form.get("username")
         password = request.form.get("password")
-        
-        expected_user = current_app.config.get("ADMIN_USERNAME")
-        expected_pass = current_app.config.get("ADMIN_PASSWORD")
-        
-        if username == expected_user and password == expected_pass:
-            user = AdminUser("admin")
+
+        user = (
+            User.query.filter_by(username=username, is_active=True).first()
+            if username
+            else None
+        )
+
+        if user and user.check_password(password):
             login_user(user)
             next_page = request.args.get("next")
             return redirect(next_page or url_for("admin.dashboard"))
@@ -208,6 +204,40 @@ def manage_email_templates():
         templates=templates,
         template_keys=list(DEFAULT_EMAIL_TEMPLATES.keys()),
         active_page="templates",
+    )
+
+
+@admin_bp.route("/admin/users", methods=["GET", "POST"])
+@login_required
+def manage_users():
+    """List and create/update admin users stored in the database."""
+
+    if request.method == "POST":
+        username = (request.form.get("username") or "").strip()
+        password = (request.form.get("password") or "").strip()
+
+        if not username or not password:
+            flash("Username and password are required.", "error")
+            return redirect(url_for("admin.manage_users"))
+
+        user = User.query.filter_by(username=username).first()
+        if user:
+            user.set_password(password)
+            flash(f"Password updated for '{username}'.", "success")
+        else:
+            user = User(username=username)
+            user.set_password(password)
+            db.session.add(user)
+            flash(f"User '{username}' created.", "success")
+
+        db.session.commit()
+        return redirect(url_for("admin.manage_users"))
+
+    users = User.query.order_by(User.created_at.desc()).all()
+    return render_template(
+        "admin_users.html",
+        users=users,
+        active_page="users",
     )
 
 

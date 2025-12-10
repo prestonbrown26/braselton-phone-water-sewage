@@ -1,0 +1,72 @@
+{% extends "admin_base.html" %}
+{% block title %}Admin Users{% endblock %}
+{% block content %}
+<div class="card">
+  <h2 style="margin-top:0;">Admin Users</h2>
+  <p style="color:var(--muted); margin-top:4px;">
+    Create new admin accounts or update passwords for existing users.
+  </p>
+  <form method="post" style="margin-top:16px; display:flex; gap:12px; flex-wrap:wrap;">
+    <div style="flex:1; min-width:220px;">
+      <label for="username" style="font-weight:600; display:block; margin-bottom:6px;">Username</label>
+      <input
+        id="username"
+        name="username"
+        type="text"
+        required
+        style="width:100%; padding:10px 12px; border:1px solid var(--border); border-radius:8px;"
+      />
+    </div>
+    <div style="flex:1; min-width:220px;">
+      <label for="password" style="font-weight:600; display:block; margin-bottom:6px;">Password</label>
+      <input
+        id="password"
+        name="password"
+        type="password"
+        required
+        style="width:100%; padding:10px 12px; border:1px solid var(--border); border-radius:8px;"
+      />
+    </div>
+    <div style="align-self:flex-end;">
+      <button
+        type="submit"
+        style="padding:10px 18px; background:var(--brand); color:white; border:none; border-radius:8px; font-weight:700; cursor:pointer;"
+      >
+        Save User
+      </button>
+    </div>
+  </form>
+</div>
+
+<div class="card" style="margin-top:20px;">
+  <h3 style="margin-top:0;">Existing Users</h3>
+  <div style="overflow-x:auto;">
+    <table style="width:100%; border-collapse:collapse; margin-top:12px;">
+      <thead>
+        <tr style="text-align:left; border-bottom:1px solid var(--border);">
+          <th style="padding:10px 0;">Username</th>
+          <th style="padding:10px 0;">Active</th>
+          <th style="padding:10px 0;">Created</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for user in users %}
+        <tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:10px 0;">{{ user.username }}</td>
+          <td style="padding:10px 0;">{{ "Yes" if user.is_active else "No" }}</td>
+          <td style="padding:10px 0;">{{ user.created_at.strftime("%Y-%m-%d %H:%M") }}</td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="3" style="padding:10px 0; color:var(--muted);">No users found.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <p style="color:var(--muted); font-size:13px; margin-top:12px;">
+    Updating a username that already exists will only change its password.
+  </p>
+</div>
+{% endblock %}
+
