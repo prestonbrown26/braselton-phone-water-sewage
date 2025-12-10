@@ -148,6 +148,9 @@
           class="{{ 'active' if active_page == 'users' else '' }}"
           >Users</a
         >
+        <span style="color:var(--muted); font-weight:600; font-size:14px;">
+          Signed in as {{ current_user.username }}
+        </span>
         <a href="{{ url_for('admin.logout') }}">Logout</a>
       </nav>
     </header>
