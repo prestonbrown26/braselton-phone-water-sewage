@@ -12,11 +12,28 @@ from typing import Any
 
 from flask import Blueprint, current_app, jsonify, render_template, request
 
+from . import csrf
 from .email_templates import ensure_email_template
 from .email_utils import send_billing_email
 from .models import CallLog, EmailEvent, EmailTemplateConfig, TransferEvent, db
 
 main_bp = Blueprint("main", __name__)
+
+
+def _verify_webhook_secret() -> bool:
+    """Verify a shared secret for incoming webhooks (defense against spoofing)."""
+
+    expected = (current_app.config.get("WEBHOOK_SHARED_SECRET") or "").strip()
+    if not expected:
+        return True  # not configured; allow
+
+    provided = request.headers.get("X-Webhook-Secret") or request.headers.get("X-Webhook-Token")
+    if provided != expected:
+        current_app.logger.warning(
+            "Rejected webhook due to invalid secret. Path=%s", request.path
+        )
+        return False
+    return True
 
 
 @main_bp.route("/", methods=["GET"])
@@ -33,6 +50,7 @@ def index() -> Any:
 
 
 @main_bp.route("/webhook/email", methods=["POST"])
+@csrf.exempt
 def handle_email_request() -> Any:
     """Handle email sending requests from Retell AI agent.
     
@@ -46,6 +64,8 @@ def handle_email_request() -> Any:
     """
     
     try:
+        if not _verify_webhook_secret():
+            return jsonify({"error": "unauthorized"}), 401
         data = request.get_json(force=True, silent=False)
         
         # Log the incoming data for debugging
@@ -114,10 +134,13 @@ def handle_email_request() -> Any:
 
 
 @main_bp.route("/webhook/transcript", methods=["POST"])
+@csrf.exempt
 def retell_transcript_webhook() -> Any:
     """Handle Retell AI agent-level webhook events."""
 
     try:
+        if not _verify_webhook_secret():
+            return jsonify({"error": "unauthorized"}), 401
         payload = request.get_json(force=True, silent=False)
         current_app.logger.info("Received transcript webhook payload: %s", payload)
 
@@ -202,10 +225,13 @@ def retell_transcript_webhook() -> Any:
 
 
 @main_bp.route("/webhook/transfer", methods=["POST"])
+@csrf.exempt
 def retell_transfer_webhook() -> Any:
     """Record transfer attempts initiated by the agent."""
 
     try:
+        if not _verify_webhook_secret():
+            return jsonify({"error": "unauthorized"}), 401
         data = request.get_json(force=True, silent=False)
         current_app.logger.info("Received transfer webhook payload: %s", data)
 

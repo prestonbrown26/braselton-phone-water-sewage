@@ -7,6 +7,7 @@
     Create new admin accounts or update passwords for existing users.
   </p>
   <form method="post" style="margin-top:16px; display:flex; gap:12px; flex-wrap:wrap;">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <div style="flex:1; min-width:220px;">
       <label for="username" style="font-weight:600; display:block; margin-bottom:6px;">Username</label>
       <input

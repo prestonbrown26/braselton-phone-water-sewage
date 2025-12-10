@@ -10,12 +10,15 @@ from dotenv import load_dotenv
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
+from flask_wtf import CSRFProtect
 
 # SQLAlchemy instance shared across modules
 db = SQLAlchemy()
 
 # Login manager
 login_manager = LoginManager()
+# CSRF protection
+csrf = CSRFProtect()
 
 
 def create_app() -> Flask:
@@ -35,8 +38,16 @@ def create_app() -> Flask:
         SECRET_KEY=os.getenv("SECRET_KEY", "dev-secret-key"),
         SQLALCHEMY_DATABASE_URI=os.getenv("DATABASE_URL", "sqlite:///dev.db"),
         SQLALCHEMY_TRACK_MODIFICATIONS=False,
+        SESSION_COOKIE_SECURE=os.getenv("SESSION_COOKIE_SECURE", "true").strip().lower()
+        in {"1", "true", "yes", "on"},
+        SESSION_COOKIE_HTTPONLY=True,
+        SESSION_COOKIE_SAMESITE="Lax",
+        REMEMBER_COOKIE_SECURE=True,
+        REMEMBER_COOKIE_HTTPONLY=True,
+        REMEMBER_COOKIE_SAMESITE="Lax",
         # Retell AI configuration
         RETELL_API_KEY=os.getenv("RETELL_API_KEY", ""),
+        WEBHOOK_SHARED_SECRET=os.getenv("WEBHOOK_SHARED_SECRET", ""),
         # SMTP2Go email configuration
         SMTP2GO_SMTP_HOST=os.getenv("SMTP2GO_SMTP_HOST", "smtp.smtp2go.com"),
         SMTP2GO_SMTP_PORT=int(os.getenv("SMTP2GO_SMTP_PORT", "587")),
@@ -65,6 +76,7 @@ def create_app() -> Flask:
     configure_logging(app)
 
     db.init_app(app)
+    csrf.init_app(app)
     
     # Initialize login manager
     login_manager.init_app(app)

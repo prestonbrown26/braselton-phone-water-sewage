@@ -66,6 +66,7 @@
   </p>
 
   <form method="POST">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     {% for template_type in template_keys %} {% set template =
     templates.get(template_type) %}
     <div class="template-card">
