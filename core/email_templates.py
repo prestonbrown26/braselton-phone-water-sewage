@@ -1,10 +1,12 @@
-"""Email template defaults and helpers."""
+"""Email template defaults and helpers (Django version)."""
 
 from __future__ import annotations
 
 from typing import Dict
 
-from .models import EmailTemplateConfig, db
+from django.db import transaction
+
+from .models import EmailTemplateConfig
 
 DEFAULT_EMAIL_TEMPLATES: Dict[str, Dict[str, str]] = {
     "payment_link": {
@@ -77,37 +79,29 @@ def _default_for(template_type: str) -> Dict[str, str]:
 def ensure_email_template(template_type: str) -> EmailTemplateConfig:
     """Return template from DB, creating with defaults if missing."""
 
-    template = EmailTemplateConfig.query.filter_by(template_type=template_type).first()
+    template = EmailTemplateConfig.objects.filter(template_type=template_type).first()
     if template:
         return template
 
     defaults = _default_for(template_type)
-    template = EmailTemplateConfig(
+    template = EmailTemplateConfig.objects.create(
         template_type=template_type,
         subject=defaults["subject"],
         body=defaults["body"],
     )
-    db.session.add(template)
-    db.session.commit()
     return template
 
 
 def ensure_all_email_templates() -> None:
     """Make sure all templates exist in the database."""
 
-    created = False
-    for template_type in DEFAULT_EMAIL_TEMPLATES:
-        if not EmailTemplateConfig.query.filter_by(template_type=template_type).first():
-            defaults = _default_for(template_type)
-            db.session.add(
-                EmailTemplateConfig(
+    with transaction.atomic():
+        for template_type in DEFAULT_EMAIL_TEMPLATES:
+            if not EmailTemplateConfig.objects.filter(template_type=template_type).exists():
+                defaults = _default_for(template_type)
+                EmailTemplateConfig.objects.create(
                     template_type=template_type,
                     subject=defaults["subject"],
                     body=defaults["body"],
                 )
-            )
-            created = True
-    if created:
-        db.session.commit()
-
 

@@ -72,13 +72,13 @@
       {% for log in logs %}
       <tr>
         <td>
-          <a href="{{ url_for('admin.call_detail', log_id=log.id) }}" style="color: var(--brand); font-weight:600; text-decoration:none;">
+          <a href="{% url 'admin-call-detail' log.id %}" style="color: var(--brand); font-weight:600; text-decoration:none;">
             {{ log.call_id }}
           </a>
         </td>
-        <td>{{ log.caller_number or "Unknown" }}</td>
+        <td>{{ log.caller_number|default:"Unknown" }}</td>
         <td style="max-width: 380px; white-space: pre-line">
-          {{ log.transcript[:350] }}{% if log.transcript|length > 350 %}…{% endif %}
+          {{ log.transcript|slice:":350" }}{% if log.transcript|length > 350 %}…{% endif %}
         </td>
         <td>
           {% if log.sentiment %}
@@ -93,10 +93,10 @@
             <span class="badge badge-neutral">n/a</span>
           {% endif %}
         </td>
-        <td>{{ 'Yes' if log.email_sent else 'No' }}</td>
+        <td>{% if log.email_sent %}Yes{% else %}No{% endif %}</td>
         <td>{{ log.display_time }}</td>
       </tr>
-      {% else %}
+      {% empty %}
       <tr>
         <td colspan="6">No call logs recorded yet.</td>
       </tr>
@@ -105,5 +105,4 @@
   </table>
 </div>
 {% endblock %}
-
 

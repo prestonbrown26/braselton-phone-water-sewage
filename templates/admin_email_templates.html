@@ -66,11 +66,10 @@
   </p>
 
   <form method="POST">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-    {% for template_type in template_keys %} {% set template =
-    templates.get(template_type) %}
+    {% csrf_token %}
+    {% for template_type, template in template_list %}
     <div class="template-card">
-      <h2>{{ template_type.replace('_', ' ').title() }}</h2>
+      <h2>{{ template_type|title }}</h2>
       <label for="{{ template_type }}_subject">Email subject</label>
       <input
         type="text"
@@ -93,5 +92,4 @@
   </form>
 </div>
 {% endblock %}
-
 

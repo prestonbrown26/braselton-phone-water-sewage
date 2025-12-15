@@ -118,51 +118,52 @@
   <body>
     <header class="topbar">
       <div class="brand">
-        <a href="{{ url_for('admin.dashboard') }}" style="text-decoration:none; color:inherit;">
+        <a href="{% url 'admin-dashboard' %}" style="text-decoration:none; color:inherit;">
           Braselton Utilities Admin
         </a>
-        <span style="color:var(--muted); font-weight:600; font-size:14px;">
-          Signed in as {{ current_user.username }}
-        </span>
       </div>
       <nav>
+        {% if request.user.is_authenticated %}
+        <div style="display:flex; align-items:center; gap:10px; padding-right:10px;">
+          <span style="background:var(--brand-light); color:var(--brand); padding:6px 10px; border-radius:999px; font-weight:700; font-size:13px; border:1px solid var(--border);">
+            {{ request.user.username }}
+          </span>
+        </div>
+        {% endif %}
         <a
-          href="{{ url_for('admin.dashboard') }}"
-          class="{{ 'active' if active_page == 'home' else '' }}"
+          href="{% url 'admin-dashboard' %}"
+          class="{% if active_page == 'home' %}active{% endif %}"
           >Dashboard</a
         >
         <a
-          href="{{ url_for('admin.search_transcripts') }}"
-          class="{{ 'active' if active_page == 'transcripts' else '' }}"
+          href="{% url 'admin-transcripts' %}"
+          class="{% if active_page == 'transcripts' %}active{% endif %}"
           >Transcripts</a
         >
         <a
-          href="{{ url_for('admin.admin_calls') }}"
-          class="{{ 'active' if active_page == 'calls' else '' }}"
+          href="{% url 'admin-calls' %}"
+          class="{% if active_page == 'calls' %}active{% endif %}"
           >Call Logs</a
         >
         <a
-          href="{{ url_for('admin.manage_email_templates') }}"
-          class="{{ 'active' if active_page == 'templates' else '' }}"
+          href="{% url 'admin-manage-email-templates' %}"
+          class="{% if active_page == 'templates' %}active{% endif %}"
           >Email Templates</a
         >
         <a
-          href="{{ url_for('admin.manage_users') }}"
-          class="{{ 'active' if active_page == 'users' else '' }}"
+          href="{% url 'admin-manage-users' %}"
+          class="{% if active_page == 'users' %}active{% endif %}"
           >Users</a
         >
-        <a href="{{ url_for('admin.logout') }}">Logout</a>
+        <a href="{% url 'admin-logout' %}">Logout</a>
       </nav>
     </header>
     <div class="flash-container">
-      {% with messages = get_flashed_messages(with_categories=true) %}
-      {% if messages %} {% for category, message in messages %}
-      <div class="flash flash-{{ category }}">{{ message }}</div>
+      {% if messages %} {% for message in messages %}
+      <div class="flash flash-{{ message.tags|default:'info' }}">{{ message }}</div>
       {% endfor %} {% endif %}
-      {% endwith %}
     </div>
     <main class="page-content">{% block content %}{% endblock %}</main>
   </body>
 </html>
-
 

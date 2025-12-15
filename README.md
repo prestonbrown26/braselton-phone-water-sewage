@@ -1,6 +1,6 @@
-## Braselton Utilities Voice Agent
+## Braselton Utilities Voice Agent (Django)
 
-Flask app that receives Retell AI webhooks, logs calls to Postgres, and sends billing emails through SMTP2Go.
+Django app that receives Retell AI webhooks, logs calls to Postgres, and sends billing emails through SMTP2Go.
 
 ### Prerequisites
 - Python 3.11+
@@ -18,13 +18,17 @@ pip install -r requirements.txt
 ```
 cp env.example .env
 ```
-3) Initialize the database:
+3) Run migrations (creates tables):
 ```
-python init_db.py
+python manage.py migrate
 ```
-4) Run locally:
+4) Create an admin user (or use the admin Users page after first login):
 ```
-flask --app app:app --debug run
+python manage.py createsuperuser
+```
+5) Run locally:
+```
+python manage.py runserver
 ```
 
 ### Key URLs
@@ -43,5 +47,3 @@ flask --app app:app --debug run
 - Set the same env vars in Render/Azure as in `.env`.
 - Keep `EMAIL_STUB_MODE=true` in staging to log emails without sending.
 - Flip `EMAIL_STUB_MODE=false` in production once SMTP2Go DNS and credentials are verified.
-
-

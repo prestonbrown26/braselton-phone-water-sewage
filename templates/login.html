@@ -121,16 +121,14 @@
             <p class="subtitle">Braselton Utilities Call Management</p>
         </div>
         
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    <div class="error-message">{{ message }}</div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
+        {% if messages %}
+            {% for message in messages %}
+                <div class="error-message">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
         
         <form method="POST">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            {% csrf_token %}
             <div class="form-group">
                 <label for="username">Username</label>
                 <input 

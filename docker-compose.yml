@@ -6,18 +6,21 @@ services:
     ports:
       - "8000:8000"
     environment:
-      FLASK_ENV: development
-      DATABASE_URL: postgresql+psycopg2://postgres:postgres@db:5432/braselton
+      DEBUG: "false"
+      SECRET_KEY: ${SECRET_KEY:-change-me}
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/braselton
       RETELL_API_KEY: ${RETELL_API_KEY:-}
+      WEBHOOK_SHARED_SECRET: ${WEBHOOK_SHARED_SECRET:-}
       SMTP2GO_SMTP_HOST: smtp.smtp2go.com
       SMTP2GO_SMTP_PORT: 587
       SMTP2GO_USERNAME: ${SMTP2GO_USERNAME:-}
       SMTP2GO_PASSWORD: ${SMTP2GO_PASSWORD:-}
       EMAIL_FROM_ADDRESS: utilitybilling@braselton.net
+      EMAIL_STUB_MODE: "true"
       TOWN_WEBSITE_URL: https://braselton.net
-      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
-      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-changeme}
       LOG_RETENTION_DAYS: 1825
+      AGENT_PHONE_NUMBER: +1-770-000-0000
+      TRANSFER_NUMBERS: ""
     depends_on:
       - db
 

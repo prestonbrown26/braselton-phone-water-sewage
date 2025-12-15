@@ -253,7 +253,7 @@
     Search and review call logs (5-year retention per GA law LG 20-022)
   </p>
 
-  <form class="search-form" method="GET" action="/admin/transcripts">
+  <form class="search-form" method="GET" action="{% url 'admin-transcripts' %}">
     <div class="form-row">
       <div class="form-group">
         <label for="call_id">Call ID</label>
@@ -288,7 +288,7 @@
       <button
         type="button"
         class="btn-secondary"
-        onclick="window.location.href='/admin/transcripts'"
+        onclick="window.location.href='{% url 'admin-transcripts' %}'"
       >
         Clear
       </button>
@@ -330,7 +330,7 @@
           <span class="badge badge-email">Email Sent</span>
           {% endif %}
         </div>
-        <a class="detail-link" href="{{ url_for('admin.call_detail', log_id=log.id) }}">
+        <a class="detail-link" href="{% url 'admin-call-detail' log.id %}">
           View full record →
         </a>
       </div>
@@ -349,23 +349,23 @@
           </div>
           <div>
             <dt>Caller</dt>
-            <dd>{{ log.caller_number or 'Unknown' }}</dd>
+            <dd>{{ log.caller_number|default:"Unknown" }}</dd>
           </div>
           <div>
             <dt>Duration</dt>
-            <dd>{{ log.duration_seconds or 'n/a' }} seconds</dd>
+            <dd>{{ log.duration_seconds|default:"n/a" }} seconds</dd>
           </div>
           <div>
             <dt>Sentiment</dt>
-            <dd>{{ log.sentiment or 'neutral' }}</dd>
+            <dd>{{ log.sentiment|default:"neutral" }}</dd>
           </div>
           <div>
             <dt>Transferred</dt>
-            <dd>{{ 'Yes' if log.transferred else 'No' }}</dd>
+            <dd>{% if log.transferred %}Yes{% else %}No{% endif %}</dd>
           </div>
           <div>
             <dt>Email Sent</dt>
-            <dd>{{ 'Yes' if log.email_sent else 'No' }}</dd>
+            <dd>{% if log.email_sent %}Yes{% else %}No{% endif %}</dd>
           </div>
           <div>
             <dt>Logged At</dt>
@@ -380,7 +380,7 @@
           <div class="event-item">
             <div class="event-time">{{ event.display_time }}</div>
             <div class="event-title">
-              {{ event.template_type.replace('_', ' ') | title }} →
+              {{ event.template_label }} →
               {{ event.recipient }}
             </div>
             <div class="event-meta">Subject: {{ event.subject }}</div>
@@ -397,7 +397,7 @@
           {% for event in log.transfer_events %}
           <div class="event-item">
             <div class="event-time">{{ event.display_time }}</div>
-            <div class="event-title">{{ event.target_number or 'Unknown target' }}</div>
+            <div class="event-title">{{ event.target_number|default:"Unknown target" }}</div>
             {% if event.reason %}
             <div class="event-meta">Reason: {{ event.reason }}</div>
             {% endif %} {% if event.notes %}
@@ -425,5 +425,4 @@
   {% endif %}
 </div>
 {% endblock %}
-
 

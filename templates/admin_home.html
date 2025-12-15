@@ -118,22 +118,22 @@
     <div class="quick-card">
       <h3>Review Transcripts</h3>
       <p>Search and export call transcripts for audits or staff follow-up.</p>
-      <a href="{{ url_for('admin.search_transcripts') }}">Open transcripts</a>
+      <a href="{% url 'admin-transcripts' %}">Open transcripts</a>
     </div>
     <div class="quick-card">
       <h3>Call Logs</h3>
       <p>Browse a table of all calls with sentiment, email status, and timestamps.</p>
-      <a href="{{ url_for('admin.admin_calls') }}">View call logs</a>
+      <a href="{% url 'admin-calls' %}">View call logs</a>
     </div>
     <div class="quick-card">
       <h3>Email Templates</h3>
       <p>Update subject lines and body copy for AI-generated follow-up emails.</p>
-      <a href="{{ url_for('admin.manage_email_templates') }}">Edit templates</a>
+      <a href="{% url 'admin-manage-email-templates' %}">Edit templates</a>
     </div>
     <div class="quick-card">
       <h3>Export CSV</h3>
       <p>Download the full 5-year retention archive for compliance requests.</p>
-      <a href="{{ url_for('admin.export_calls') }}">Download CSV</a>
+      <a href="{% url 'admin-export-calls' %}">Download CSV</a>
     </div>
   </div>
 
@@ -153,11 +153,11 @@
       {% for call in recent_calls %}
       <tr>
         <td>{{ call.call_id }}</td>
-        <td>{{ call.caller_number or 'Unknown' }}</td>
-        <td>{{ call.duration_seconds or 'n/a' }}s</td>
+        <td>{{ call.caller_number|default:"Unknown" }}</td>
+        <td>{{ call.duration_seconds|default:"n/a" }}s</td>
         <td>{{ call.display_time }}</td>
         <td>
-          <a href="{{ url_for('admin.call_detail', log_id=call.id) }}" style="color: var(--brand); font-weight:600;">
+          <a href="{% url 'admin-call-detail' call.id %}" style="color: var(--brand); font-weight:600;">
             View
           </a>
         </td>
@@ -170,5 +170,4 @@
   {% endif %}
 </div>
 {% endblock %}
-
 
