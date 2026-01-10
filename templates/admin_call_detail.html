@@ -130,7 +130,7 @@
       {% if log.email_events %}
       <div class="sidebar-section">
         <h3>Email Activity</h3>
-        {% for event in log.email_events %}
+        {% for event in log.email_events.all %}
         <div class="event-item">
           <div class="event-time">{{ event.display_time }}</div>
           <div class="event-title">{{ event.template_label }} → {{ event.recipient }}</div>
@@ -147,7 +147,7 @@
       {% if log.transfer_events %}
       <div class="sidebar-section">
         <h3>Transfers</h3>
-        {% for event in log.transfer_events %}
+        {% for event in log.transfer_events.all %}
         <div class="event-item">
           <div class="event-time">{{ event.display_time }}</div>
           <div class="event-title">{{ event.target_number|default:"Unknown target" }}</div>
