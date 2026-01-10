@@ -174,8 +174,26 @@ def webhook_transcript(request: HttpRequest) -> JsonResponse:
 
     existing = CallLog.objects.filter(call_id=call_id).first()
     if existing:
-        logger.info("Call %s already logged; acking webhook", call_id)
-        return JsonResponse({"status": "already_exists"})
+        # Update placeholder/partial record with the real transcript/metadata.
+        existing.transcript = transcript or existing.transcript
+        if caller_number:
+            existing.caller_number = caller_number
+        if duration_seconds is not None:
+            existing.duration_seconds = duration_seconds
+        if call_end_dt:
+            existing.created_at = call_end_dt
+        existing.sentiment = existing.sentiment or "neutral"
+        existing.save(
+            update_fields=[
+                "transcript",
+                "caller_number",
+                "duration_seconds",
+                "created_at",
+                "sentiment",
+            ]
+        )
+        logger.info("Call %s updated with transcript/metadata; acking webhook", call_id)
+        return JsonResponse({"status": "updated"})
 
     caller_number = call_data.get("from_number")
     start_ts = call_data.get("start_timestamp")
