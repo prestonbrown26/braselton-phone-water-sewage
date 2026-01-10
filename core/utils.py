@@ -27,6 +27,12 @@ def verify_webhook_secret(request: HttpRequest) -> bool:
     if not expected:
         return True
 
-    provided = request.headers.get("X-Webhook-Secret") or request.headers.get("X-Webhook-Token")
+    provided = (
+        request.headers.get("X-Webhook-Secret")
+        or request.headers.get("X-Webhook-Token")
+        or request.GET.get("token")
+        or request.GET.get("secret")
+        or request.GET.get("webhook_secret")
+    )
     return provided == expected
 
