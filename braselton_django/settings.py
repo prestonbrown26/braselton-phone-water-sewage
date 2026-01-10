@@ -18,6 +18,8 @@ env = environ.Env(
     ALLOWED_HOSTS=(list, ["*"]),
     CSRF_TRUSTED_ORIGINS=(list, []),
     SESSION_COOKIE_SECURE=(bool, True),
+    DEFAULT_FROM_EMAIL=(str, "utilitybilling@braselton.net"),
+    SERVER_EMAIL=(str, "utilitybilling@braselton.net"),
     EMAIL_STUB_MODE=(bool, False),
     LOG_RETENTION_DAYS=(int, 1825),  # 5 years
     TRANSFER_NUMBERS=(list, []),
@@ -121,6 +123,8 @@ EMAIL_HOST_PASSWORD = env("SMTP2GO_PASSWORD", default="")
 EMAIL_USE_TLS = True
 EMAIL_FROM_ADDRESS = env("EMAIL_FROM_ADDRESS", default="utilitybilling@braselton.net")
 EMAIL_STUB_MODE = env("EMAIL_STUB_MODE")
+DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default=EMAIL_FROM_ADDRESS)
+SERVER_EMAIL = env("SERVER_EMAIL", default=EMAIL_FROM_ADDRESS)
 
 # Retell / webhook configuration
 RETELL_API_KEY = env("RETELL_API_KEY", default="")

@@ -35,11 +35,15 @@ User = get_user_model()
 def annotate_call_logs(logs: Iterable[CallLog]) -> None:
     for log in logs:
         log.display_time = format_eastern(log.created_at)
-        for event in getattr(log, "email_events", []):
-            event.display_time = format_eastern(event.created_at)
-            event.template_label = (event.template_type or "").replace("_", " ").title()
-        for event in getattr(log, "transfer_events", []):
-            event.display_time = format_eastern(event.created_at)
+        email_events = getattr(log, "email_events", None)
+        if email_events:
+            for event in email_events.all():
+                event.display_time = format_eastern(event.created_at)
+                event.template_label = (event.template_type or "").replace("_", " ").title()
+        transfer_events = getattr(log, "transfer_events", None)
+        if transfer_events:
+            for event in transfer_events.all():
+                event.display_time = format_eastern(event.created_at)
 
 
 def get_email_template(email_type: str) -> tuple[str, str]:
