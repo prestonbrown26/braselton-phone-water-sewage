@@ -376,7 +376,7 @@
         {% if log.email_events %}
         <div class="event-section">
           <h4>Email Activity</h4>
-          {% for event in log.email_events %}
+          {% for event in log.email_events.all %}
           <div class="event-item">
             <div class="event-time">{{ event.display_time }}</div>
             <div class="event-title">
@@ -394,7 +394,7 @@
         {% endif %} {% if log.transfer_events %}
         <div class="event-section">
           <h4>Transfer Attempts</h4>
-          {% for event in log.transfer_events %}
+          {% for event in log.transfer_events.all %}
           <div class="event-item">
             <div class="event-time">{{ event.display_time }}</div>
             <div class="event-title">{{ event.target_number|default:"Unknown target" }}</div>
