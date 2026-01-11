@@ -92,6 +92,7 @@ def webhook_email(request: HttpRequest) -> JsonResponse:
     email_type = args.get("email_type", "payment_link")
     user_email = args.get("user_email")
     call_id = args.get("call_id") or (data.get("call") or {}).get("call_id") or "unknown"
+    caller_number = args.get("caller_phone") or (data.get("call") or {}).get("from_number")
 
     if not user_email:
         logger.error("Missing user_email in webhook data: %s", data)
@@ -102,6 +103,23 @@ def webhook_email(request: HttpRequest) -> JsonResponse:
 
     with transaction.atomic():
         call_log = CallLog.objects.filter(call_id=call_id).first()
+
+        # Fallback: if call_id not found, try to attach to the most recent call from the same number.
+        if not call_log and caller_number:
+            recent_call = (
+                CallLog.objects.filter(caller_number=caller_number)
+                .order_by("-created_at")
+                .first()
+            )
+            if recent_call:
+                call_log = recent_call
+                call_id = call_log.call_id
+                logger.info(
+                    "Attached email webhook to existing call %s via caller_number match (%s)",
+                    call_id,
+                    caller_number,
+                )
+
         if not call_log:
             placeholder_text = (
                 "Call log placeholder created automatically because the email webhook "
@@ -109,14 +127,17 @@ def webhook_email(request: HttpRequest) -> JsonResponse:
             )
             call_log = CallLog.objects.create(
                 call_id=call_id,
-                caller_number=args.get("caller_phone"),
+                caller_number=caller_number,
                 transcript=placeholder_text,
                 sentiment="neutral",
                 transferred=False,
                 email_sent=False,
                 created_at=datetime.utcnow().replace(tzinfo=timezone.utc),
             )
-            logger.warning("Created placeholder call log for %s because email arrived before transcript.", call_id)
+            logger.warning(
+                "Created placeholder call log for %s because email arrived before transcript.",
+                call_id,
+            )
 
         call_log.email_sent = True
         call_log.save(update_fields=["email_sent"])
