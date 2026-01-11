@@ -174,6 +174,20 @@ def webhook_transcript(request: HttpRequest) -> JsonResponse:
     if not call_id:
         return JsonResponse({"error": "call.call_id is required"}, status=400)
 
+    caller_number = call_data.get("from_number")
+    start_ts = call_data.get("start_timestamp")
+    end_ts = call_data.get("end_timestamp")
+    duration_seconds: int | None = None
+    call_end_dt = None
+
+    if isinstance(start_ts, (int, float)) and isinstance(end_ts, (int, float)):
+        duration_seconds = max(0, int((end_ts - start_ts) / 1000))
+
+    if isinstance(end_ts, (int, float)):
+        call_end_dt = datetime.fromtimestamp(end_ts / 1000, tz=timezone.utc)
+    else:
+        call_end_dt = datetime.now(timezone.utc)
+
     transcript = (call_data.get("transcript") or "").strip()
     if not transcript:
         stitched_lines: list[str] = []
@@ -216,21 +230,18 @@ def webhook_transcript(request: HttpRequest) -> JsonResponse:
         logger.info("Call %s updated with transcript/metadata; acking webhook", call_id)
         return JsonResponse({"status": "updated"})
 
-    caller_number = call_data.get("from_number")
-    start_ts = call_data.get("start_timestamp")
-    end_ts = call_data.get("end_timestamp")
-    duration_seconds: int | None = None
-    call_end_dt = None
+    # Attempt to reconcile with a recent placeholder created by the email webhook
+    placeholder = (
+        CallLog.objects.filter(
+            caller_number=caller_number,
+            email_sent=True,
+            transcript__startswith="Call log placeholder",
+        )
+        .order_by("-created_at")
+        .first()
+    )
 
-    if isinstance(start_ts, (int, float)) and isinstance(end_ts, (int, float)):
-        duration_seconds = max(0, int((end_ts - start_ts) / 1000))
-
-    if isinstance(end_ts, (int, float)):
-        call_end_dt = datetime.fromtimestamp(end_ts / 1000, tz=timezone.utc)
-    else:
-        call_end_dt = datetime.now(timezone.utc)
-
-    CallLog.objects.create(
+    new_call = CallLog.objects.create(
         call_id=call_id,
         caller_number=caller_number,
         transcript=transcript,
@@ -240,6 +251,20 @@ def webhook_transcript(request: HttpRequest) -> JsonResponse:
         email_sent=False,
         created_at=call_end_dt,
     )
+
+    # If there was a placeholder for this caller, migrate its email events and delete it.
+    if placeholder:
+        moved = EmailEvent.objects.filter(call=placeholder).update(call=new_call)
+        if moved:
+            new_call.email_sent = True
+            new_call.save(update_fields=["email_sent"])
+        placeholder.delete()
+        logger.info(
+            "Merged placeholder call %s into %s (moved %s email events)",
+            placeholder.call_id,
+            call_id,
+            moved,
+        )
 
     logger.info("Stored call %s (duration=%s sec, caller=%s)", call_id, duration_seconds, caller_number)
     return JsonResponse({"status": "ok"})
