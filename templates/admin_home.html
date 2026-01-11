@@ -86,12 +86,94 @@
   .recent-table tbody tr:last-child td {
     border-bottom: none;
   }
+  .config-card {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 18px;
+    background: #ffffff;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05);
+    margin-bottom: 22px;
+  }
+  .config-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+  .config-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #1f2a48;
+    margin: 0;
+  }
+  .config-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 14px;
+  }
+  .config-item {
+    background: #f8fafc;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 12px;
+  }
+  .config-label {
+    font-size: 12px;
+    letter-spacing: 0.3px;
+    color: #6b7280;
+    text-transform: uppercase;
+    margin: 0 0 6px 0;
+  }
+  .config-value {
+    font-size: 15px;
+    color: #111827;
+    margin: 0;
+    line-height: 1.4;
+  }
+  .config-value ul {
+    padding-left: 18px;
+    margin: 0;
+  }
 </style>
 {% endblock %}
 {% block content %}
 <div class="card">
   <h1>Good day, Braselton Utilities</h1>
   <p class="subtitle">Quick view of call activity and tools</p>
+
+  <div class="config-card">
+    <div class="config-header">
+      <h2 class="config-title">Phone Numbers</h2>
+      <span style="font-size:12px; color:#6b7280;">Updated for support + transfers</span>
+    </div>
+    <div class="config-grid">
+      <div class="config-item">
+        <p class="config-label">Retell AI Phone Number</p>
+        <p class="config-value">
+          {% if phone_config and phone_config.retell_ai_phone_number %}
+            {{ phone_config.retell_ai_phone_number }}
+          {% else %}
+            Not set
+          {% endif %}
+        </p>
+      </div>
+      <div class="config-item">
+        <p class="config-label">Transfer Phone Numbers</p>
+        <div class="config-value">
+          {% if phone_config and phone_config.transfer_phone_numbers %}
+            <ul>
+              {% for number in phone_config.transfer_phone_numbers %}
+              <li>{{ number }}</li>
+              {% endfor %}
+            </ul>
+          {% else %}
+            Not set
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
 
   <div class="dashboard-grid">
     <div class="stat-card">

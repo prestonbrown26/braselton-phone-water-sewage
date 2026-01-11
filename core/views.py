@@ -22,7 +22,13 @@ from django.views.decorators.csrf import csrf_exempt
 
 from .email_templates import DEFAULT_EMAIL_TEMPLATES, ensure_all_email_templates, ensure_email_template
 from .email_utils import send_billing_email
-from .models import CallLog, EmailEvent, EmailTemplateConfig, TransferEvent
+from .models import (
+    CallLog,
+    EmailEvent,
+    EmailTemplateConfig,
+    PhoneConfiguration,
+    TransferEvent,
+)
 from .utils import format_eastern, verify_webhook_secret
 
 logger = logging.getLogger(__name__)
@@ -351,6 +357,7 @@ def admin_dashboard(request: HttpRequest) -> HttpResponse:
     latest_call = CallLog.objects.first()
     total_emails = EmailEvent.objects.count()
     total_transfers = TransferEvent.objects.count()
+    phone_config = PhoneConfiguration.objects.first()
     recent_calls = (
         CallLog.objects.all()
         .prefetch_related("email_events", "transfer_events")
@@ -369,6 +376,7 @@ def admin_dashboard(request: HttpRequest) -> HttpResponse:
                 "last_call_time": format_eastern(latest_call.created_at) if latest_call else "—",
             },
             "recent_calls": recent_calls,
+            "phone_config": phone_config,
             "active_page": "home",
         },
     )

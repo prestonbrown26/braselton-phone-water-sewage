@@ -90,6 +90,22 @@ class EmailTemplateConfig(models.Model):
         return f"EmailTemplateConfig({self.template_type})"
 
 
+class PhoneConfiguration(models.Model):
+    """Stores phone numbers used by the AI and transfer flows."""
+
+    retell_ai_phone_number = models.CharField(max_length=32, blank=True, null=True)
+    transfer_phone_numbers = models.JSONField(default=list, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "phone_configuration"
+        verbose_name = "Phone Configuration"
+        verbose_name_plural = "Phone Configuration"
+
+    def __str__(self) -> str:  # pragma: no cover
+        return "PhoneConfiguration"
+
+
 # We rely on Django's built-in User model for admin accounts.
 User = settings.AUTH_USER_MODEL
 
