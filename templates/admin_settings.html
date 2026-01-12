@@ -1,0 +1,166 @@
+{% extends "admin_base.html" %}
+{% block title %}Admin Settings - Braselton Utilities{% endblock %}
+{% block extra_css %}
+<style>
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 16px;
+    align-items: start;
+  }
+  .card-section {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px;
+    background: #ffffff;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05);
+  }
+  .section-title {
+    margin: 0 0 12px 0;
+    font-size: 17px;
+    color: #1f2a48;
+  }
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 12px;
+  }
+  label {
+    font-weight: 600;
+    font-size: 13px;
+    color: #374151;
+  }
+  input[type="text"],
+  input[type="password"],
+  textarea {
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 1px solid #d1d5db;
+    font-size: 14px;
+  }
+  textarea {
+    min-height: 120px;
+    resize: vertical;
+  }
+  .muted {
+    color: #6b7280;
+    font-size: 13px;
+  }
+  button {
+    background: var(--brand);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 16px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+  }
+  th, td {
+    padding: 8px 10px;
+    border-bottom: 1px solid #e5e7eb;
+    text-align: left;
+    font-size: 13px;
+  }
+  th {
+    background: #f5f7ff;
+    color: #4b5671;
+  }
+</style>
+{% endblock %}
+{% block content %}
+<div class="card">
+  <h1>Admin Settings</h1>
+  <p class="muted">Manage phone numbers and local admin users.</p>
+
+  <div class="grid">
+    <div class="card-section">
+      <h2 class="section-title">Phone Configuration</h2>
+      <form method="post" action="{% url 'admin-settings' %}">
+        {% csrf_token %}
+        <input type="hidden" name="phone_config_form" value="1" />
+        <div class="form-group">
+          <label for="retell_ai_phone_label">Retell AI Phone Label</label>
+          <input
+            type="text"
+            id="retell_ai_phone_label"
+            name="retell_ai_phone_label"
+            placeholder="Braselton Utilities"
+            value="{{ config.retell_ai_phone_label|default_if_none:'' }}"
+          />
+          <span class="muted">Friendly label shown in admin.</span>
+        </div>
+        <div class="form-group">
+          <label for="retell_ai_phone_number">Retell AI Phone Number</label>
+          <input
+            type="text"
+            id="retell_ai_phone_number"
+            name="retell_ai_phone_number"
+            placeholder="+1-470-671-3012"
+            value="{{ config.retell_ai_phone_number|default_if_none:'' }}"
+          />
+          <span class="muted">Number provisioned for the AI agent.</span>
+        </div>
+        <div class="form-group">
+          <label for="transfer_phone_numbers">Transfer Phone Numbers</label>
+          <textarea
+            id="transfer_phone_numbers"
+            name="transfer_phone_numbers"
+            placeholder="Town Hall Office|+1-770-867-4488\nBilling Desk|+1-770-867-0000"
+          >{{ transfer_text }}</textarea>
+          <span class="muted">One per line: Label|Number (or Label,Number).</span>
+        </div>
+        <button type="submit">Save Phone Config</button>
+      </form>
+    </div>
+
+    <div class="card-section">
+      <h2 class="section-title">Users</h2>
+      <form method="post" action="{% url 'admin-settings' %}">
+        {% csrf_token %}
+        <input type="hidden" name="user_form" value="1" />
+        <div class="form-group">
+          <label for="username">Username</label>
+          <input type="text" id="username" name="username" placeholder="admin" required />
+        </div>
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input type="password" id="password" name="password" placeholder="••••••••" required />
+          <span class="muted">Sets or updates the password for this username.</span>
+        </div>
+        <button type="submit">Save User</button>
+      </form>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Username</th>
+            <th>Date Joined</th>
+            <th>Active</th>
+            <th>Staff</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for user in users %}
+          <tr>
+            <td>{{ user.username }}</td>
+            <td>{{ user.date_joined }}</td>
+            <td>{{ user.is_active }}</td>
+            <td>{{ user.is_staff }}</td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="4">No users found.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -151,9 +151,9 @@
           >Email Templates</a
         >
         <a
-          href="{% url 'admin-manage-users' %}"
-          class="{% if active_page == 'users' %}active{% endif %}"
-          >Users</a
+          href="{% url 'admin-settings' %}"
+          class="{% if active_page == 'admin-settings' %}active{% endif %}"
+          >Admin</a
         >
         <a href="{% url 'admin-logout' %}">Logout</a>
       </nav>

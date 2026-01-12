@@ -94,7 +94,9 @@ class PhoneConfiguration(models.Model):
     """Stores phone numbers used by the AI and transfer flows."""
 
     retell_ai_phone_number = models.CharField(max_length=32, blank=True, null=True)
+    retell_ai_phone_label = models.CharField(max_length=128, blank=True, null=True)
     transfer_phone_numbers = models.JSONField(default=list, blank=True)
+    transfer_phone_book = models.JSONField(default=list, blank=True)  # list of {"label": str, "number": str}
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:

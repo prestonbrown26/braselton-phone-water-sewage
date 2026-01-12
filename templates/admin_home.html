@@ -145,14 +145,17 @@
   <div class="config-card">
     <div class="config-header">
       <h2 class="config-title">Phone Numbers</h2>
-      <span style="font-size:12px; color:#6b7280;">Updated for support + transfers</span>
+      <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+        <span style="font-size:12px; color:#6b7280;">Updated for support + transfers</span>
+        <a href="{% url 'admin-settings' %}" style="background:var(--brand); color:#fff; padding:6px 10px; border-radius:8px; text-decoration:none; font-weight:600; font-size:13px;">Manage</a>
+      </div>
     </div>
     <div class="config-grid">
       <div class="config-item">
         <p class="config-label">Retell AI Phone Number</p>
         <p class="config-value">
           {% if phone_config and phone_config.retell_ai_phone_number %}
-            {{ phone_config.retell_ai_phone_number }}
+            {% if phone_config.retell_ai_phone_label %}{{ phone_config.retell_ai_phone_label }} — {% endif %}{{ phone_config.retell_ai_phone_number }}
           {% else %}
             Not set
           {% endif %}
@@ -161,11 +164,17 @@
       <div class="config-item">
         <p class="config-label">Transfer Phone Numbers</p>
         <div class="config-value">
-          {% if phone_config and phone_config.transfer_phone_numbers %}
+          {% if phone_config and (phone_config.transfer_phone_book or phone_config.transfer_phone_numbers) %}
             <ul>
-              {% for number in phone_config.transfer_phone_numbers %}
-              <li>{{ number }}</li>
-              {% endfor %}
+              {% if phone_config.transfer_phone_book %}
+                {% for entry in phone_config.transfer_phone_book %}
+                  <li>{% if entry.label %}{{ entry.label }} — {% endif %}{{ entry.number }}</li>
+                {% endfor %}
+              {% else %}
+                {% for number in phone_config.transfer_phone_numbers %}
+                  <li>{{ number }}</li>
+                {% endfor %}
+              {% endif %}
             </ul>
           {% else %}
             Not set

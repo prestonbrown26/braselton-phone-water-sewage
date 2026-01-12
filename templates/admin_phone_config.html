@@ -1,0 +1,86 @@
+{% extends "admin_base.html" %}
+{% block title %}Phone Configuration - Braselton Utilities{% endblock %}
+{% block extra_css %}
+<style>
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 16px;
+  }
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  label {
+    font-weight: 600;
+    font-size: 13px;
+    color: #374151;
+  }
+  input[type="text"],
+  textarea {
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 1px solid #d1d5db;
+    font-size: 14px;
+  }
+  textarea {
+    min-height: 120px;
+    resize: vertical;
+  }
+  .actions {
+    margin-top: 16px;
+    display: flex;
+    gap: 12px;
+  }
+  button {
+    background: var(--brand);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 16px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .muted {
+    color: #6b7280;
+    font-size: 13px;
+  }
+</style>
+{% endblock %}
+{% block content %}
+<div class="card">
+  <h1>Phone Configuration</h1>
+  <p class="muted">Set the Retell AI number and transfer destinations.</p>
+
+  <form method="post" action="{% url 'admin-phone-config' %}">
+    {% csrf_token %}
+    <div class="form-grid">
+      <div class="form-group">
+        <label for="retell_ai_phone_number">Retell AI Phone Number</label>
+        <input
+          type="text"
+          id="retell_ai_phone_number"
+          name="retell_ai_phone_number"
+          placeholder="+1-470-671-3012"
+          value="{{ config.retell_ai_phone_number|default_if_none:'' }}"
+        />
+        <span class="muted">Number provisioned for the AI agent.</span>
+      </div>
+      <div class="form-group">
+        <label for="transfer_phone_numbers">Transfer Phone Numbers</label>
+        <textarea
+          id="transfer_phone_numbers"
+          name="transfer_phone_numbers"
+          placeholder="+1-770-867-4488\n+1-770-867-0000"
+        >{{ transfer_text }}</textarea>
+        <span class="muted">One per line or comma-separated.</span>
+      </div>
+    </div>
+    <div class="actions">
+      <button type="submit">Save Configuration</button>
+      <a href="{% url 'admin-dashboard' %}" class="muted" style="text-decoration:none; align-self:center;">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

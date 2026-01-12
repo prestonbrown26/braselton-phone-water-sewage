@@ -16,7 +16,7 @@ urlpatterns = [
     path("admin/transcripts/", views.admin_transcripts, name="admin-transcripts"),
     path("admin/export/", views.admin_export, name="admin-export-calls"),
     path("admin/email-templates/", views.manage_email_templates, name="admin-manage-email-templates"),
-    path("admin/users/", views.manage_users, name="admin-manage-users"),
+    path("admin/admin/", views.admin_settings, name="admin-settings"),
     path("admin/calls/<int:log_id>/", views.call_detail, name="admin-call-detail"),
 ]
 

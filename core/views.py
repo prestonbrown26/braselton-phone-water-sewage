@@ -6,6 +6,7 @@ import csv
 import io
 import json
 import logging
+import re
 from datetime import datetime, timezone
 from typing import Iterable
 
@@ -429,6 +430,120 @@ def admin_transcripts(request: HttpRequest) -> HttpResponse:
                 "date": date_str,
             },
             "active_page": "transcripts",
+        },
+    )
+
+
+@login_required
+def manage_phone_config(request: HttpRequest) -> HttpResponse:
+    config = PhoneConfiguration.objects.first()
+    if not config:
+        config = PhoneConfiguration.objects.create(
+            retell_ai_phone_number=None, transfer_phone_numbers=[]
+        )
+
+    if request.method == "POST":
+        retell_number = (request.POST.get("retell_ai_phone_number") or "").strip()
+        transfer_raw = request.POST.get("transfer_phone_numbers") or ""
+        transfer_numbers = [
+            n.strip() for n in re.split(r"[,\n]", transfer_raw) if n.strip()
+        ]
+
+        config.retell_ai_phone_number = retell_number or None
+        config.transfer_phone_numbers = transfer_numbers
+        config.save()
+        messages.success(request, "Phone configuration saved.")
+        return redirect("admin-phone-config")
+
+    transfer_text = "\n".join(config.transfer_phone_numbers or [])
+    return render(
+        request,
+        "admin_phone_config.html",
+        {
+            "config": config,
+            "transfer_text": transfer_text,
+            "active_page": "phone",
+        },
+    )
+
+
+@login_required
+def admin_settings(request: HttpRequest) -> HttpResponse:
+    # Handle Phone Configuration
+    phone_config = PhoneConfiguration.objects.first()
+    if not phone_config:
+        phone_config = PhoneConfiguration.objects.create(
+            retell_ai_phone_number=None,
+            retell_ai_phone_label=None,
+            transfer_phone_numbers=[],
+            transfer_phone_book=[],
+        )
+
+    if request.method == "POST":
+        if "phone_config_form" in request.POST:
+            retell_number = (request.POST.get("retell_ai_phone_number") or "").strip()
+            retell_label = (request.POST.get("retell_ai_phone_label") or "").strip()
+            transfer_raw = request.POST.get("transfer_phone_numbers") or ""
+            transfer_entries = []
+            for line in re.split(r"\n", transfer_raw):
+                if not line.strip():
+                    continue
+                parts = [p.strip() for p in re.split(r"[|,]", line, maxsplit=1)]
+                if len(parts) == 2:
+                    label, number = parts
+                else:
+                    label, number = "", parts[0]
+                if number:
+                    transfer_entries.append(
+                        {"label": label or "Transfer", "number": number}
+                    )
+            transfer_numbers = [entry["number"] for entry in transfer_entries]
+
+            phone_config.retell_ai_phone_number = retell_number or None
+            phone_config.retell_ai_phone_label = retell_label or None
+            phone_config.transfer_phone_numbers = transfer_numbers
+            phone_config.transfer_phone_book = transfer_entries
+            phone_config.save()
+            messages.success(request, "Phone configuration saved.")
+            return redirect("admin-settings")
+
+        if "user_form" in request.POST:
+            username = (request.POST.get("username") or "").strip()
+            password = (request.POST.get("password") or "").strip()
+
+            if not username or not password:
+                messages.error(request, "Username and password are required.")
+                return redirect("admin-settings")
+
+            user, created = User.objects.get_or_create(username=username)
+            user.set_password(password)
+            user.is_active = True
+            user.save()
+
+            if created:
+                messages.success(request, f"User '{username}' created.")
+            else:
+                messages.success(request, f"Password updated for '{username}'.")
+
+            return redirect("admin-settings")
+
+    users = User.objects.all().order_by("-date_joined")
+    # Prefer the structured book; fall back to legacy list for display
+    if phone_config.transfer_phone_book:
+        transfer_text = "\n".join(
+            f"{entry.get('label','')}|{entry.get('number','')}"
+            for entry in phone_config.transfer_phone_book
+        )
+    else:
+        transfer_text = "\n".join(phone_config.transfer_phone_numbers or [])
+    return render(
+        request,
+        "admin_settings.html",
+        {
+            "config": phone_config,
+            "transfer_text": transfer_text,
+            "users": users,
+            "active_page": "admin-settings",
         },
     )
 
