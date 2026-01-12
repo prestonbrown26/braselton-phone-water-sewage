@@ -352,7 +352,11 @@ def admin_login(request: HttpRequest) -> HttpResponse:
         user = authenticate(request, username=username, password=password)
         if user:
             login(request, user)
-            next_url = request.GET.get("next") or reverse("admin-dashboard")
+            next_param = request.GET.get("next")
+            if next_param and next_param.startswith("/"):
+                next_url = next_param
+            else:
+                next_url = reverse("admin-dashboard")
             return redirect(next_url)
 
         messages.error(request, "Invalid username or password")
@@ -373,8 +377,9 @@ def forgot_password(request: HttpRequest) -> HttpResponse:
             messages.error(request, "Email is required.")
             return redirect("forgot-password")
         user = User.objects.filter(email__iexact=email).first()
+        # Always respond consistently; avoid timing differences for nonexistent emails.
         if not user:
-            messages.error(request, "If that email exists, a reset link will be sent.")
+            messages.success(request, "If that email exists, a reset link has been sent.")
             return redirect("forgot-password")
         token = uuid.uuid4().hex
         expires_at = datetime.now(timezone.utc) + timedelta(hours=2)
@@ -637,7 +642,7 @@ def admin_settings(request: HttpRequest) -> HttpResponse:
             send_mail(
                 subject="You're invited to Braselton Water/Sewer Admin",
                 message=f"You have been invited to create an account for the Braselton Water/Sewer AI Agent Dashboard.\n\nClick to accept: {invite_link}\n\nThis link expires in 48 hours.",
-            from_email=getattr(settings, "EMAIL_FROM_APP", None),
+                from_email=getattr(settings, "EMAIL_FROM_APP", None),
                 recipient_list=[invite_email],
                 fail_silently=False,
             )

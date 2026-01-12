@@ -227,6 +227,10 @@
       <h2 class="section-title">Users</h2>
 
       {% if can_manage_users %}
+      <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:12px;">
+        <p class="muted" style="margin:0;">Superusers can manage accounts or send invites.</p>
+        <button type="button" class="icon-btn add-btn" onclick="openInviteModal()">Invite User</button>
+      </div>
       <form method="post" action="{% url 'admin-settings' %}" id="user-form">
         {% csrf_token %}
         <input type="hidden" name="user_form" value="1" />
