@@ -547,6 +547,9 @@ def admin_settings(request: HttpRequest) -> HttpResponse:
 
     if request.method == "POST":
         if "phone_config_form" in request.POST:
+            if not request.user.is_superuser:
+                messages.error(request, "Only superusers can update phone configuration.")
+                return redirect("admin-settings")
             retell_number = (request.POST.get("retell_ai_phone_number") or "").strip()
             retell_label = (request.POST.get("retell_ai_phone_label") or "").strip()
             labels = request.POST.getlist("transfer_label")
@@ -568,18 +571,43 @@ def admin_settings(request: HttpRequest) -> HttpResponse:
             messages.success(request, "Phone configuration saved.")
             return redirect("admin-settings")
 
+        if "transfer_request" in request.POST:
+            req_label = (request.POST.get("req_transfer_label") or "").strip()
+            req_number = (request.POST.get("req_transfer_number") or "").strip()
+            req_desc = (request.POST.get("req_transfer_description") or "").strip()
+            if not req_number:
+                messages.error(request, "Transfer number is required for a request.")
+                return redirect("admin-settings")
+            body = (
+                f"Transfer number change requested by {request.user.username} (email: {request.user.email or 'n/a'}).\n\n"
+                f"Label: {req_label or 'n/a'}\n"
+                f"Number: {req_number}\n"
+                f"Description: {req_desc or 'n/a'}\n"
+            )
+            send_mail(
+                subject="Transfer number change request",
+                message=body,
+                from_email=getattr(settings, "EMAIL_FROM_ADDRESS", None),
+                recipient_list=["brownpreston2490@gmail.com"],
+                fail_silently=False,
+            )
+            messages.success(request, "Request sent for transfer number change.")
+            return redirect("admin-settings")
+
         if "user_form" in request.POST:
             if not request.user.is_superuser:
                 messages.error(request, "Only superusers can create or edit users.")
                 return redirect("admin-settings")
             username = (request.POST.get("username") or "").strip()
+            email = (request.POST.get("email") or "").strip()
             password = (request.POST.get("password") or "").strip()
 
-            if not username or not password:
-                messages.error(request, "Username and password are required.")
+            if not username or not password or not email:
+                messages.error(request, "Username, email, and password are required.")
                 return redirect("admin-settings")
 
             user, created = User.objects.get_or_create(username=username)
+            user.email = email
             user.set_password(password)
             user.is_active = True
             user.save()
@@ -649,6 +677,7 @@ def admin_settings(request: HttpRequest) -> HttpResponse:
             "transfer_entries": transfer_entries,
             "users": users,
             "can_manage_users": request.user.is_superuser,
+            "can_manage_phone": request.user.is_superuser,
             "active_page": "admin-settings",
         },
     )
