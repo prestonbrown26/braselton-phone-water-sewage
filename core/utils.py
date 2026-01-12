@@ -32,6 +32,10 @@ def verify_webhook_secret(request: HttpRequest) -> bool:
         logger.warning("WEBHOOK_SHARED_SECRET not configured; rejecting webhook.")
         return False
 
-    provided = request.headers.get("X-Webhook-Secret") or request.headers.get("X-Webhook-Token")
+    provided = (
+        request.headers.get("X-Webhook-Secret")
+        or request.headers.get("X-Webhook-Token")
+        or request.GET.get("token")
+    )
     return provided == expected
 
