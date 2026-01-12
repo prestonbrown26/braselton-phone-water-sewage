@@ -453,9 +453,10 @@ def admin_transcripts(request: HttpRequest) -> HttpResponse:
     )
 
 
+@login_required
 def admin_settings(request: HttpRequest) -> HttpResponse:
     if not request.user.is_staff and not request.user.is_superuser:
-        return JsonResponse({"error": "forbidden"}, status=403)
+        return render(request, "admin_home.html", {"active_page": "home"}, status=403)
     # Handle Phone Configuration
     phone_config = PhoneConfiguration.objects.first()
     if not phone_config:

@@ -6,6 +6,8 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 
 from django.conf import settings
+import logging
+
 from django.http import HttpRequest
 
 
@@ -18,6 +20,8 @@ def format_eastern(dt: datetime | None) -> str:
     if dt.tzinfo is None:
         dt = dt.replace(tzinfo=ZoneInfo("UTC"))
     return dt.astimezone(EASTERN_TZ).strftime("%Y-%m-%d %I:%M %p ET")
+
+logger = logging.getLogger(__name__)
 
 
 def verify_webhook_secret(request: HttpRequest) -> bool:
