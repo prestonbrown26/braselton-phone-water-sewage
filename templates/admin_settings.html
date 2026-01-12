@@ -33,6 +33,7 @@
   }
   input[type="text"],
   input[type="password"],
+  input[type="tel"],
   textarea {
     padding: 10px 12px;
     border-radius: 8px;
@@ -66,11 +67,17 @@
     padding: 8px 10px;
     cursor: pointer;
     font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
   }
   .add-btn {
     background: var(--brand);
     color: #fff;
     border: none;
+  }
+  .icon-btn .icon {
+    font-weight: 900;
   }
   button {
     background: var(--brand);
@@ -147,14 +154,18 @@
               <div class="transfer-row">
                 <input type="text" name="transfer_label" placeholder="Label" value="{{ entry.label|default_if_none:'' }}" />
                 <input type="tel" name="transfer_number" placeholder="+1-770-867-4488" value="{{ entry.number|default_if_none:'' }}" />
-                <button type="button" class="icon-btn" onclick="removeTransferRow(this)">✕</button>
+                <button type="button" class="icon-btn danger" onclick="removeTransferRow(this)">
+                  <span class="icon">🗑</span> Delete
+                </button>
               </div>
               {% endfor %}
             {% else %}
               <div class="transfer-row">
                 <input type="text" name="transfer_label" placeholder="Label" />
                 <input type="tel" name="transfer_number" placeholder="+1-770-867-4488" />
-                <button type="button" class="icon-btn" onclick="removeTransferRow(this)">✕</button>
+                <button type="button" class="icon-btn danger" onclick="removeTransferRow(this)">
+                  <span class="icon">🗑</span> Delete
+                </button>
               </div>
             {% endif %}
           </div>
@@ -226,7 +237,9 @@
     row.innerHTML = `
       <input type="text" name="transfer_label" placeholder="Label" />
       <input type="tel" name="transfer_number" placeholder="+1-770-867-4488" />
-      <button type="button" class="icon-btn" onclick="removeTransferRow(this)">✕</button>
+      <button type="button" class="icon-btn danger" onclick="removeTransferRow(this)">
+        <span class="icon">🗑</span> Delete
+      </button>
     `;
     list.appendChild(row);
   }
