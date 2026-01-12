@@ -358,7 +358,10 @@
         <input type="email" id="invite_email_input" name="invite_email_input" required style="width:100%; padding:10px; border:1px solid var(--border); border-radius:8px;">
       </div>
       <div style="display:flex; gap:10px; justify-content:flex-end;">
-        <button type="submit" class="icon-btn add-btn" onclick="syncInviteEmail()">Send Invite</button>
+        <button type="submit" class="icon-btn add-btn" id="invite-submit-btn" onclick="syncInviteEmail()">
+          <span class="btn-text">Send Invite</span>
+          <span class="spinner" style="margin-left:8px; display:none;">⏳</span>
+        </button>
       </div>
     </form>
   </div>
@@ -368,5 +371,24 @@
     const val = document.getElementById("invite_email_input").value;
     document.querySelector("input[name='invite_email']").value = val;
   }
+  (function() {
+    const form = document.getElementById("invite-form");
+    const btn = document.getElementById("invite-submit-btn");
+    if (!form || !btn) return;
+    const text = btn.querySelector(".btn-text");
+    const spin = btn.querySelector(".spinner");
+    let submitting = false;
+    form.addEventListener("submit", function(e) {
+      if (submitting) {
+        e.preventDefault();
+        return false;
+      }
+      submitting = true;
+      btn.classList.add("loading");
+      btn.disabled = true;
+      if (spin) spin.style.display = "inline-block";
+      if (text) text.textContent = "Sending...";
+    });
+  })();
 </script>
 {% endblock %}

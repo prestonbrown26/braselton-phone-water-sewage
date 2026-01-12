@@ -139,7 +139,7 @@
 {% endblock %}
 {% block content %}
 <div class="card">
-  <h1>Good day, Braselton Water/Sewer</h1>
+  <h1>Good day, {{ request.user.username }}</h1>
   <p class="subtitle">Quick view of call activity and tools</p>
 
   <div class="config-card">

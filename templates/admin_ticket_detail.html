@@ -53,6 +53,20 @@
     font-weight:700;
     cursor:pointer;
   }
+  .loading {
+    opacity: 0.7;
+    pointer-events: none;
+  }
+  .spinner {
+    width: 14px;
+    height: 14px;
+    border: 2px solid #fff;
+    border-top-color: transparent;
+    border-radius: 50%;
+    display: inline-block;
+    animation: spin 0.7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
 </style>
 {% endblock %}
 {% block content %}
@@ -85,14 +99,38 @@
       <p class="muted">No comments yet.</p>
     {% endif %}
 
-    <form method="post" action="{% url 'admin-ticket-detail' ticket.id %}" style="margin-top:12px;">
+    <form method="post" action="{% url 'admin-ticket-detail' ticket.id %}" style="margin-top:12px;" id="comment-form">
       {% csrf_token %}
       <div class="form-group">
         <label for="comment" style="font-weight:700; color:#374151;">Add a comment</label>
         <textarea id="comment" name="comment" placeholder="Write an update..."></textarea>
       </div>
-      <button type="submit" class="btn-primary">Post Comment</button>
+      <button type="submit" class="btn-primary" id="comment-submit-btn">
+        <span class="btn-text">Post Comment</span>
+        <span class="spinner" style="margin-left:8px; display:none;"></span>
+      </button>
     </form>
   </div>
 </div>
+<script>
+  (function() {
+    const form = document.getElementById("comment-form");
+    const btn = document.getElementById("comment-submit-btn");
+    if (!form || !btn) return;
+    const text = btn.querySelector(".btn-text");
+    const spin = btn.querySelector(".spinner");
+    let submitting = false;
+    form.addEventListener("submit", function(e) {
+      if (submitting) {
+        e.preventDefault();
+        return false;
+      }
+      submitting = true;
+      btn.classList.add("loading");
+      btn.disabled = true;
+      if (spin) spin.style.display = "inline-block";
+      if (text) text.textContent = "Submitting...";
+    });
+  })();
+</script>
 {% endblock %}

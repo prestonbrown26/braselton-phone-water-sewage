@@ -386,7 +386,7 @@ def forgot_password(request: HttpRequest) -> HttpResponse:
         PasswordResetToken.objects.create(user=user, token=token, expires_at=expires_at)
         reset_link = request.build_absolute_uri(reverse("reset-password") + f"?token={token}")
         send_mail(
-            subject="Reset your Braselton Water/Sewer admin password",
+            subject="Reset your Braselton Water/Sewer Dashboard account password",
             message=f"Click to reset your password: {reset_link}\n\nThis link expires in 2 hours.",
             from_email=getattr(settings, "EMAIL_FROM_APP", None),
             recipient_list=[email],
@@ -640,7 +640,7 @@ def admin_settings(request: HttpRequest) -> HttpResponse:
             )
             invite_link = request.build_absolute_uri(reverse("accept-invite") + f"?token={token}")
             send_mail(
-                subject="You're invited to Braselton Water/Sewer Admin",
+                subject="You're invited to the Braselton Water/Sewer AI Phone AgentDashboard",
                 message=f"You have been invited to create an account for the Braselton Water/Sewer AI Agent Dashboard.\n\nClick to accept: {invite_link}\n\nThis link expires in 48 hours.",
                 from_email=getattr(settings, "EMAIL_FROM_APP", None),
                 recipient_list=[invite_email],
@@ -736,7 +736,7 @@ def admin_feedback(request: HttpRequest) -> HttpResponse:
                     body += f"Label: {transfer_label or 'n/a'}\n"
                     body += f"Number: {transfer_number or 'n/a'}"
                 send_mail(
-                    subject=f"[Ticket] {ticket_type.capitalize()}: {title or 'No title'}",
+                    subject=f"Braselton Water/Sewer AI Phone Agent Dashboard: \n[Ticket] {ticket_type.capitalize()}: {title or 'No title'}",
                     message=body,
                     from_email=getattr(settings, "EMAIL_FROM_APP", None),
                     recipient_list=[recipient],
@@ -832,9 +832,9 @@ def admin_ticket_detail(request: HttpRequest, ticket_id: int) -> HttpResponse:
         if recipients:
             subject = f"[Ticket #{ticket.id}] {ticket.title}"
             message = (
-                f"New comment on ticket '{ticket.title}'\n"
+                f"Braselton Water/Sewer AI Phone Agent Dashboard: \nNew comment on ticket '{ticket.title}'\n"
                 f"By: {request.user.username} ({author_email or 'n/a'})\n\n"
-                f"{body}\n\n"
+                    f"\"{body}\"\n\n"
                 f"View: {request.build_absolute_uri(reverse('admin-ticket-detail', args=[ticket.id]))}"
             )
             send_mail(
