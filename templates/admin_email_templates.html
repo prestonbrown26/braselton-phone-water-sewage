@@ -69,7 +69,7 @@
     {% csrf_token %}
     {% for template_type, template in template_list %}
     <div class="template-card">
-      <h2>{{ template_type|title }}</h2>
+      <h2>{{ template_type|cut:"_"|title }}</h2>
       <label for="{{ template_type }}_subject">Email subject</label>
       <input
         type="text"
@@ -91,5 +91,13 @@
     <button type="submit" class="btn-primary">Save Changes</button>
   </form>
 </div>
+<script>
+  const form = document.querySelector("form");
+  form.addEventListener("submit", () => {
+    const btn = form.querySelector("button[type='submit']");
+    btn.disabled = true;
+    btn.textContent = "Saving...";
+  });
+</script>
 {% endblock %}
 

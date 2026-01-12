@@ -16,7 +16,8 @@ from django.contrib.auth import authenticate, get_user_model, login, logout
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.db.models import QuerySet
-from django.http import HttpRequest, HttpResponse, JsonResponse
+from django.core.paginator import Paginator
+from django.http import HttpRequest, HttpResponse, JsonResponse, StreamingHttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.csrf import csrf_exempt
@@ -109,12 +110,17 @@ def webhook_email(request: HttpRequest) -> JsonResponse:
     send_billing_email(to_address=user_email, subject=subject, body=body)
 
     with transaction.atomic():
-        call_log = CallLog.objects.filter(call_id=call_id).first()
+        call_log = (
+            CallLog.objects.select_for_update()
+            .filter(call_id=call_id)
+            .first()
+        )
 
         # Fallback: if call_id not found, try to attach to the most recent call from the same number.
         if not call_log and caller_number:
             recent_call = (
-                CallLog.objects.filter(caller_number=caller_number)
+                CallLog.objects.select_for_update()
+                .filter(caller_number=caller_number)
                 .order_by("-created_at")
                 .first()
             )
@@ -139,7 +145,7 @@ def webhook_email(request: HttpRequest) -> JsonResponse:
                 sentiment="neutral",
                 transferred=False,
                 email_sent=False,
-                created_at=datetime.utcnow().replace(tzinfo=timezone.utc),
+                created_at=datetime.now(timezone.utc),
             )
             logger.warning(
                 "Created placeholder call log for %s because email arrived before transcript.",
@@ -214,7 +220,11 @@ def webhook_transcript(request: HttpRequest) -> JsonResponse:
         else:
             transcript += "No recording URL supplied."
 
-    existing = CallLog.objects.filter(call_id=call_id).first()
+    existing = (
+        CallLog.objects.select_for_update()
+        .filter(call_id=call_id)
+        .first()
+    )
     if existing:
         # Update placeholder/partial record with the real transcript/metadata.
         existing.transcript = transcript or existing.transcript
@@ -296,7 +306,7 @@ def webhook_transfer(request: HttpRequest) -> JsonResponse:
     notes = data.get("notes") or data.get("details")
 
     with transaction.atomic():
-        call_log = CallLog.objects.filter(call_id=call_id).first()
+        call_log = CallLog.objects.select_for_update().filter(call_id=call_id).first()
         if not call_log:
             placeholder_text = "Transfer webhook received before transcript; placeholder created."
             call_log = CallLog.objects.create(
@@ -306,7 +316,7 @@ def webhook_transfer(request: HttpRequest) -> JsonResponse:
                 sentiment="neutral",
                 transferred=False,
                 email_sent=False,
-                created_at=datetime.utcnow().replace(tzinfo=timezone.utc),
+                created_at=datetime.now(timezone.utc),
             )
 
         TransferEvent.objects.create(
@@ -385,13 +395,20 @@ def admin_dashboard(request: HttpRequest) -> HttpResponse:
 
 @login_required
 def admin_calls(request: HttpRequest) -> HttpResponse:
-    logs = (
+    page_number = request.GET.get("page", 1)
+    qs = (
         CallLog.objects.all()
         .prefetch_related("email_events", "transfer_events")
-        .order_by("-created_at")[:200]
+        .order_by("-created_at")
     )
-    annotate_call_logs(logs)
-    return render(request, "admin_calls.html", {"logs": logs, "active_page": "calls"})
+    paginator = Paginator(qs, 50)
+    page_obj = paginator.get_page(page_number)
+    annotate_call_logs(page_obj.object_list)
+    return render(
+        request,
+        "admin_calls.html",
+        {"logs": page_obj, "page_obj": page_obj, "active_page": "calls"},
+    )
 
 
 @login_required
@@ -413,62 +430,32 @@ def admin_transcripts(request: HttpRequest) -> HttpResponse:
         except ValueError:
             pass
 
-    results = (
-        query.prefetch_related("email_events", "transfer_events")
-        .order_by("-created_at")[:100]
-    )
-    annotate_call_logs(results)
+    page_number = request.GET.get("page", 1)
+    qs = query.prefetch_related("email_events", "transfer_events").order_by("-created_at")
+    paginator = Paginator(qs, 50)
+    page_obj = paginator.get_page(page_number)
+    annotate_call_logs(page_obj.object_list)
 
     return render(
         request,
         "admin_transcripts.html",
         {
-            "results": results,
+            "results": page_obj,
+            "page_obj": page_obj,
             "search_params": {
                 "call_id": call_id,
                 "phone": phone,
                 "date": date_str,
             },
+            "retention_days": settings.LOG_RETENTION_DAYS,
             "active_page": "transcripts",
         },
     )
 
 
-@login_required
-def manage_phone_config(request: HttpRequest) -> HttpResponse:
-    config = PhoneConfiguration.objects.first()
-    if not config:
-        config = PhoneConfiguration.objects.create(
-            retell_ai_phone_number=None, transfer_phone_numbers=[]
-        )
-
-    if request.method == "POST":
-        retell_number = (request.POST.get("retell_ai_phone_number") or "").strip()
-        transfer_raw = request.POST.get("transfer_phone_numbers") or ""
-        transfer_numbers = [
-            n.strip() for n in re.split(r"[,\n]", transfer_raw) if n.strip()
-        ]
-
-        config.retell_ai_phone_number = retell_number or None
-        config.transfer_phone_numbers = transfer_numbers
-        config.save()
-        messages.success(request, "Phone configuration saved.")
-        return redirect("admin-phone-config")
-
-    transfer_text = "\n".join(config.transfer_phone_numbers or [])
-    return render(
-        request,
-        "admin_phone_config.html",
-        {
-            "config": config,
-            "transfer_text": transfer_text,
-            "active_page": "phone",
-        },
-    )
-
-
-@login_required
 def admin_settings(request: HttpRequest) -> HttpResponse:
+    if not request.user.is_staff and not request.user.is_superuser:
+        return JsonResponse({"error": "forbidden"}, status=403)
     # Handle Phone Configuration
     phone_config = PhoneConfiguration.objects.first()
     if not phone_config:
@@ -522,7 +509,23 @@ def admin_settings(request: HttpRequest) -> HttpResponse:
 
             return redirect("admin-settings")
 
+        if "user_delete_id" in request.POST:
+            user_id = request.POST.get("user_delete_id")
+            try:
+                target = User.objects.get(id=user_id)
+            except User.DoesNotExist:
+                messages.error(request, "User not found.")
+                return redirect("admin-settings")
+            if target == request.user:
+                messages.error(request, "You cannot delete your own account.")
+                return redirect("admin-settings")
+            target.delete()
+            messages.success(request, f"User '{target.username}' deleted.")
+            return redirect("admin-settings")
+
     users = User.objects.all().order_by("-date_joined")
+    for u in users:
+        u.display_joined = format_eastern(u.date_joined)
     # Prefer the structured book; fall back to legacy list for display
     transfer_entries = phone_config.transfer_phone_book or [
         {"label": "", "number": n} for n in (phone_config.transfer_phone_numbers or [])
@@ -541,42 +544,44 @@ def admin_settings(request: HttpRequest) -> HttpResponse:
 
 @login_required
 def admin_export(request: HttpRequest) -> HttpResponse:
-    output = io.StringIO()
-    writer = csv.writer(output)
-    writer.writerow(
-        [
-            "id",
-            "call_id",
-            "caller_number",
-            "transcript",
-            "duration_seconds",
-            "sentiment",
-            "transferred",
-            "email_sent",
-            "created_at",
-        ]
-    )
-
-    for log in CallLog.objects.all().order_by("-created_at"):
+    def row_iter():
+        buffer = io.StringIO()
+        writer = csv.writer(buffer)
         writer.writerow(
             [
-                log.id,
-                log.call_id,
-                log.caller_number,
-                log.transcript,
-                log.duration_seconds,
-                log.sentiment,
-                log.transferred,
-                log.email_sent,
-                log.created_at.isoformat(),
+                "id",
+                "call_id",
+                "caller_number",
+                "transcript",
+                "duration_seconds",
+                "sentiment",
+                "transferred",
+                "email_sent",
+                "created_at",
             ]
         )
+        yield buffer.getvalue()
+        buffer.seek(0)
+        buffer.truncate(0)
+        for log in CallLog.objects.all().order_by("-created_at").iterator():
+            writer.writerow(
+                [
+                    log.id,
+                    log.call_id,
+                    log.caller_number,
+                    log.transcript,
+                    log.duration_seconds,
+                    log.sentiment,
+                    log.transferred,
+                    log.email_sent,
+                    log.created_at.isoformat(),
+                ]
+            )
+            yield buffer.getvalue()
+            buffer.seek(0)
+            buffer.truncate(0)
 
-    output.seek(0)
-    response = HttpResponse(
-        output.read(),
-        content_type="text/csv",
-    )
+    response = StreamingHttpResponse(row_iter(), content_type="text/csv")
     response["Content-Disposition"] = "attachment; filename=braselton_call_logs.csv"
     return response
 
@@ -626,6 +631,8 @@ def manage_email_templates(request: HttpRequest) -> HttpResponse:
 
 @login_required
 def manage_users(request: HttpRequest) -> HttpResponse:
+    if not request.user.is_staff and not request.user.is_superuser:
+        return JsonResponse({"error": "forbidden"}, status=403)
     if request.method == "POST":
         username = (request.POST.get("username") or "").strip()
         password = (request.POST.get("password") or "").strip()

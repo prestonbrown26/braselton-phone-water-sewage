@@ -96,6 +96,14 @@
     background: #f5f7ff;
     color: #4b5671;
   }
+  .actions-cell {
+    display: flex;
+    gap: 6px;
+  }
+  .danger {
+    background: #dc2626;
+    color: #fff;
+  }
 </style>
 {% endblock %}
 {% block content %}
@@ -106,7 +114,7 @@
   <div class="grid">
     <div class="card-section">
       <h2 class="section-title">Phone Configuration</h2>
-      <form method="post" action="{% url 'admin-settings' %}">
+      <form method="post" action="{% url 'admin-settings' %}" id="phone-form">
         {% csrf_token %}
         <input type="hidden" name="phone_config_form" value="1" />
         <div class="form-group">
@@ -123,7 +131,7 @@
         <div class="form-group">
           <label for="retell_ai_phone_number">Retell AI Phone Number</label>
           <input
-            type="text"
+            type="tel"
             id="retell_ai_phone_number"
             name="retell_ai_phone_number"
             placeholder="+1-470-671-3012"
@@ -138,15 +146,15 @@
               {% for entry in transfer_entries %}
               <div class="transfer-row">
                 <input type="text" name="transfer_label" placeholder="Label" value="{{ entry.label|default_if_none:'' }}" />
-                <input type="text" name="transfer_number" placeholder="+1-770-867-4488" value="{{ entry.number|default_if_none:'' }}" />
-                <button type="button" class="icon-btn" onclick="this.parentElement.remove()">✕</button>
+                <input type="tel" name="transfer_number" placeholder="+1-770-867-4488" value="{{ entry.number|default_if_none:'' }}" />
+                <button type="button" class="icon-btn" onclick="removeTransferRow(this)">✕</button>
               </div>
               {% endfor %}
             {% else %}
               <div class="transfer-row">
                 <input type="text" name="transfer_label" placeholder="Label" />
-                <input type="text" name="transfer_number" placeholder="+1-770-867-4488" />
-                <button type="button" class="icon-btn" onclick="this.parentElement.remove()">✕</button>
+                <input type="tel" name="transfer_number" placeholder="+1-770-867-4488" />
+                <button type="button" class="icon-btn" onclick="removeTransferRow(this)">✕</button>
               </div>
             {% endif %}
           </div>
@@ -159,7 +167,7 @@
 
     <div class="card-section">
       <h2 class="section-title">Users</h2>
-      <form method="post" action="{% url 'admin-settings' %}">
+      <form method="post" action="{% url 'admin-settings' %}" id="user-form">
         {% csrf_token %}
         <input type="hidden" name="user_form" value="1" />
         <div class="form-group">
@@ -169,6 +177,7 @@
         <div class="form-group">
           <label for="password">Password</label>
           <input type="password" id="password" name="password" placeholder="••••••••" required />
+          <button type="button" class="icon-btn" style="margin-top:6px;" onclick="togglePwd('password', this)">Show/Hide</button>
           <span class="muted">Sets or updates the password for this username.</span>
         </div>
         <button type="submit">Save User</button>
@@ -181,19 +190,27 @@
             <th>Date Joined</th>
             <th>Active</th>
             <th>Staff</th>
+            <th>Actions</th>
           </tr>
         </thead>
         <tbody>
           {% for user in users %}
           <tr>
             <td>{{ user.username }}</td>
-            <td>{{ user.date_joined }}</td>
+            <td>{{ user.display_joined }}</td>
             <td>{{ user.is_active }}</td>
             <td>{{ user.is_staff }}</td>
+            <td class="actions-cell">
+              <form method="post" action="{% url 'admin-settings' %}" onsubmit="return confirm('Delete user {{ user.username }}?');">
+                {% csrf_token %}
+                <input type="hidden" name="user_delete_id" value="{{ user.id }}">
+                <button type="submit" class="icon-btn danger">Delete</button>
+              </form>
+            </td>
           </tr>
           {% empty %}
           <tr>
-            <td colspan="4">No users found.</td>
+            <td colspan="5">No users found.</td>
           </tr>
           {% endfor %}
         </tbody>
@@ -208,10 +225,33 @@
     row.className = "transfer-row";
     row.innerHTML = `
       <input type="text" name="transfer_label" placeholder="Label" />
-      <input type="text" name="transfer_number" placeholder="+1-770-867-4488" />
-      <button type="button" class="icon-btn" onclick="this.parentElement.remove()">✕</button>
+      <input type="tel" name="transfer_number" placeholder="+1-770-867-4488" />
+      <button type="button" class="icon-btn" onclick="removeTransferRow(this)">✕</button>
     `;
     list.appendChild(row);
   }
+  function removeTransferRow(btn) {
+    if (confirm("Remove this transfer number?")) {
+      btn.parentElement.remove();
+    }
+  }
+  function togglePwd(id, btn) {
+    const field = document.getElementById(id);
+    field.type = field.type === "password" ? "text" : "password";
+    btn.textContent = field.type === "password" ? "Show/Hide" : "Hide/Show";
+  }
+  function attachLoading(formId) {
+    const form = document.getElementById(formId);
+    if (!form) return;
+    form.addEventListener("submit", () => {
+      const buttons = form.querySelectorAll("button[type='submit']");
+      buttons.forEach((b) => {
+        b.disabled = true;
+        b.textContent = "Saving...";
+      });
+    });
+  }
+  attachLoading("phone-form");
+  attachLoading("user-form");
 </script>
 {% endblock %}

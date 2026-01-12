@@ -47,5 +47,9 @@ def send_billing_email(*, to_address: str, subject: str, body: str) -> None:
     )
 
     logger.info("Sending SMTP2Go email to %s", to_address)
-    backend.send_messages([email])
+    try:
+        backend.send_messages([email])
+    except Exception as exc:  # pragma: no cover - network dependent
+        logger.error("Failed to send email to %s: %s", to_address, exc)
+        raise
 

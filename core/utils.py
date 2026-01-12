@@ -25,7 +25,8 @@ def verify_webhook_secret(request: HttpRequest) -> bool:
 
     expected = (getattr(settings, "WEBHOOK_SHARED_SECRET", "") or "").strip()
     if not expected:
-        return True
+        logger.warning("WEBHOOK_SHARED_SECRET not configured; rejecting webhook.")
+        return False
 
     provided = (
         request.headers.get("X-Webhook-Secret")

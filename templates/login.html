@@ -73,6 +73,16 @@
             outline: none;
             border-color: #667eea;
         }
+
+        .icon-btn {
+            margin-top: 6px;
+            border: 1px solid #d1d5db;
+            background: #fff;
+            border-radius: 8px;
+            padding: 8px 10px;
+            cursor: pointer;
+            font-weight: 600;
+        }
         
         .btn-login {
             width: 100%;
@@ -150,9 +160,10 @@
                     required
                     autocomplete="current-password"
                 >
+                <button type="button" class="icon-btn" onclick="togglePwd()">Show/Hide</button>
             </div>
             
-            <button type="submit" class="btn-login">
+            <button type="submit" class="btn-login" id="login-btn">
                 Sign In
             </button>
         </form>
@@ -161,6 +172,18 @@
             Town of Braselton Utilities Department
         </div>
     </div>
+    <script>
+      function togglePwd() {
+        const field = document.getElementById("password");
+        field.type = field.type === "password" ? "text" : "password";
+      }
+      const form = document.querySelector("form");
+      form.addEventListener("submit", () => {
+        const btn = document.getElementById("login-btn");
+        btn.disabled = true;
+        btn.textContent = "Signing in...";
+      });
+    </script>
 </body>
 </html>
 
