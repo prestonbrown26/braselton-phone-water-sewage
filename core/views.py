@@ -483,20 +483,15 @@ def admin_settings(request: HttpRequest) -> HttpResponse:
         if "phone_config_form" in request.POST:
             retell_number = (request.POST.get("retell_ai_phone_number") or "").strip()
             retell_label = (request.POST.get("retell_ai_phone_label") or "").strip()
-            transfer_raw = request.POST.get("transfer_phone_numbers") or ""
+            labels = request.POST.getlist("transfer_label")
+            numbers = request.POST.getlist("transfer_number")
             transfer_entries = []
-            for line in re.split(r"\n", transfer_raw):
-                if not line.strip():
+            for label, number in zip(labels, numbers):
+                number = (number or "").strip()
+                label = (label or "").strip()
+                if not number:
                     continue
-                parts = [p.strip() for p in re.split(r"[|,]", line, maxsplit=1)]
-                if len(parts) == 2:
-                    label, number = parts
-                else:
-                    label, number = "", parts[0]
-                if number:
-                    transfer_entries.append(
-                        {"label": label or "Transfer", "number": number}
-                    )
+                transfer_entries.append({"label": label or "Transfer", "number": number})
             transfer_numbers = [entry["number"] for entry in transfer_entries]
 
             phone_config.retell_ai_phone_number = retell_number or None
@@ -529,19 +524,15 @@ def admin_settings(request: HttpRequest) -> HttpResponse:
 
     users = User.objects.all().order_by("-date_joined")
     # Prefer the structured book; fall back to legacy list for display
-    if phone_config.transfer_phone_book:
-        transfer_text = "\n".join(
-            f"{entry.get('label','')}|{entry.get('number','')}"
-            for entry in phone_config.transfer_phone_book
-        )
-    else:
-        transfer_text = "\n".join(phone_config.transfer_phone_numbers or [])
+    transfer_entries = phone_config.transfer_phone_book or [
+        {"label": "", "number": n} for n in (phone_config.transfer_phone_numbers or [])
+    ]
     return render(
         request,
         "admin_settings.html",
         {
             "config": phone_config,
-            "transfer_text": transfer_text,
+            "transfer_entries": transfer_entries,
             "users": users,
             "active_page": "admin-settings",
         },

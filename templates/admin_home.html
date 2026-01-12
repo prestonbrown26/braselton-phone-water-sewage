@@ -164,20 +164,20 @@
       <div class="config-item">
         <p class="config-label">Transfer Phone Numbers</p>
         <div class="config-value">
-          {% if phone_config and (phone_config.transfer_phone_book or phone_config.transfer_phone_numbers) %}
-            <ul>
-              {% if phone_config.transfer_phone_book %}
-                {% for entry in phone_config.transfer_phone_book %}
-                  <li>{% if entry.label %}{{ entry.label }} — {% endif %}{{ entry.number }}</li>
-                {% endfor %}
-              {% else %}
-                {% for number in phone_config.transfer_phone_numbers %}
-                  <li>{{ number }}</li>
-                {% endfor %}
-              {% endif %}
-            </ul>
+          {% if phone_config and phone_config.transfer_phone_book %}
+          <ul>
+            {% for entry in phone_config.transfer_phone_book %}
+            <li>{% if entry.label %}{{ entry.label }} — {% endif %}{{ entry.number }}</li>
+            {% endfor %}
+          </ul>
+          {% elif phone_config and phone_config.transfer_phone_numbers %}
+          <ul>
+            {% for number in phone_config.transfer_phone_numbers %}
+            <li>{{ number }}</li>
+            {% endfor %}
+          </ul>
           {% else %}
-            Not set
+          Not set
           {% endif %}
         </div>
       </div>

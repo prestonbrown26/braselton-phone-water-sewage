@@ -47,6 +47,31 @@
     color: #6b7280;
     font-size: 13px;
   }
+  .transfer-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+  .transfer-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr auto;
+    gap: 8px;
+    align-items: center;
+  }
+  .icon-btn {
+    border: 1px solid #d1d5db;
+    background: #fff;
+    border-radius: 8px;
+    padding: 8px 10px;
+    cursor: pointer;
+    font-weight: 700;
+  }
+  .add-btn {
+    background: var(--brand);
+    color: #fff;
+    border: none;
+  }
   button {
     background: var(--brand);
     color: #fff;
@@ -107,13 +132,26 @@
           <span class="muted">Number provisioned for the AI agent.</span>
         </div>
         <div class="form-group">
-          <label for="transfer_phone_numbers">Transfer Phone Numbers</label>
-          <textarea
-            id="transfer_phone_numbers"
-            name="transfer_phone_numbers"
-            placeholder="Town Hall Office|+1-770-867-4488\nBilling Desk|+1-770-867-0000"
-          >{{ transfer_text }}</textarea>
-          <span class="muted">One per line: Label|Number (or Label,Number).</span>
+          <label>Transfer Phone Numbers</label>
+          <div class="transfer-list" id="transfer-list">
+            {% if transfer_entries %}
+              {% for entry in transfer_entries %}
+              <div class="transfer-row">
+                <input type="text" name="transfer_label" placeholder="Label" value="{{ entry.label|default_if_none:'' }}" />
+                <input type="text" name="transfer_number" placeholder="+1-770-867-4488" value="{{ entry.number|default_if_none:'' }}" />
+                <button type="button" class="icon-btn" onclick="this.parentElement.remove()">✕</button>
+              </div>
+              {% endfor %}
+            {% else %}
+              <div class="transfer-row">
+                <input type="text" name="transfer_label" placeholder="Label" />
+                <input type="text" name="transfer_number" placeholder="+1-770-867-4488" />
+                <button type="button" class="icon-btn" onclick="this.parentElement.remove()">✕</button>
+              </div>
+            {% endif %}
+          </div>
+          <button type="button" class="icon-btn add-btn" onclick="addTransferRow()">+ Add number</button>
+          <span class="muted">Add a label and number for each transfer destination.</span>
         </div>
         <button type="submit">Save Phone Config</button>
       </form>
@@ -163,4 +201,17 @@
     </div>
   </div>
 </div>
+<script>
+  function addTransferRow() {
+    const list = document.getElementById("transfer-list");
+    const row = document.createElement("div");
+    row.className = "transfer-row";
+    row.innerHTML = `
+      <input type="text" name="transfer_label" placeholder="Label" />
+      <input type="text" name="transfer_number" placeholder="+1-770-867-4488" />
+      <button type="button" class="icon-btn" onclick="this.parentElement.remove()">✕</button>
+    `;
+    list.appendChild(row);
+  }
+</script>
 {% endblock %}
