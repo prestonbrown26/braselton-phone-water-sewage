@@ -108,6 +108,7 @@
     border-bottom: 1px solid #e5e7eb;
     text-align: left;
     font-size: 13px;
+    word-break: break-word;
   }
   th {
     background: #f5f7ff;
@@ -251,7 +252,8 @@
       </div>
       {% endif %}
 
-      <table>
+      <div style="overflow-x:auto;">
+      <table style="min-width:600px;">
         <thead>
           <tr>
             <th>Username</th>
@@ -287,6 +289,7 @@
           {% endfor %}
         </tbody>
       </table>
+      </div>
     </div>
   </div>
 </div>
