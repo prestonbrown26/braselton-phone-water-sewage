@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import Sequence
-
 from django.conf import settings
 from django.core.mail import EmailMessage
 from django.utils.module_loading import import_string

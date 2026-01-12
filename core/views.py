@@ -6,7 +6,6 @@ import csv
 import io
 import json
 import logging
-import re
 from datetime import datetime, timezone, timedelta
 import uuid
 from typing import Iterable
@@ -766,41 +765,6 @@ def manage_email_templates(request: HttpRequest) -> HttpResponse:
             "template_list": template_list,
             "template_keys": list(DEFAULT_EMAIL_TEMPLATES.keys()),
             "active_page": "templates",
-        },
-    )
-
-
-@login_required
-def manage_users(request: HttpRequest) -> HttpResponse:
-    if not request.user.is_staff and not request.user.is_superuser:
-        return JsonResponse({"error": "forbidden"}, status=403)
-    if request.method == "POST":
-        username = (request.POST.get("username") or "").strip()
-        password = (request.POST.get("password") or "").strip()
-
-        if not username or not password:
-            messages.error(request, "Username and password are required.")
-            return redirect("admin-manage-users")
-
-        user, created = User.objects.get_or_create(username=username)
-        user.set_password(password)
-        user.is_active = True
-        user.save()
-
-        if created:
-            messages.success(request, f"User '{username}' created.")
-        else:
-            messages.success(request, f"Password updated for '{username}'.")
-
-        return redirect("admin-manage-users")
-
-    users = User.objects.all().order_by("-date_joined")
-    return render(
-        request,
-        "admin_users.html",
-        {
-            "users": users,
-            "active_page": "users",
         },
     )
 
