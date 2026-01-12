@@ -684,6 +684,10 @@ def admin_feedback(request: HttpRequest) -> HttpResponse:
             transfer_label = (request.POST.get("transfer_label") or "").strip()
             transfer_number = (request.POST.get("transfer_number") or "").strip()
 
+            valid_types = {choice[0] for choice in Ticket.TYPE_CHOICES}
+            if ticket_type not in valid_types:
+                ticket_type = "feature"
+
             if ticket_type == "transfer_change" and not transfer_number:
                 messages.error(request, "Transfer number is required for a transfer change request.")
                 return redirect("admin-feedback")
@@ -714,9 +718,10 @@ def admin_feedback(request: HttpRequest) -> HttpResponse:
             if not recipient:
                 messages.error(request, "Ticket saved, but no recipient configured to email.")
             else:
+                username = request.user.username if request.user.is_authenticated else "anonymous"
                 user_email = request.user.email if request.user.is_authenticated else "n/a"
                 body = (
-                    f"New ticket submitted by {request.user.username} (email: {user_email})\n"
+                    f"New ticket submitted by {username} (email: {user_email})\n"
                     f"Type: {ticket_type}\n"
                     f"Title: {title or 'No title'}\n\n"
                     f"Description:\n{description}"
@@ -764,6 +769,9 @@ def admin_feedback(request: HttpRequest) -> HttpResponse:
         tickets = tickets.filter(title__icontains=search)
 
     tickets = tickets.order_by("-created_at")
+    paginator = Paginator(tickets, 15)
+    page_number = request.GET.get("page") or 1
+    page_obj = paginator.get_page(page_number)
 
     return render(
         request,
@@ -772,7 +780,8 @@ def admin_feedback(request: HttpRequest) -> HttpResponse:
             "active_page": "feedback",
             "recipient": phone_config.transfer_request_email
             or getattr(settings, "EMAIL_FROM_ADDRESS", None),
-            "tickets": tickets,
+            "tickets": page_obj.object_list,
+            "page_obj": page_obj,
             "can_update": request.user.is_superuser,
             "status_choices": Ticket.STATUS_CHOICES,
             "type_choices": Ticket.TYPE_CHOICES,
@@ -834,6 +843,7 @@ def admin_ticket_detail(request: HttpRequest, ticket_id: int) -> HttpResponse:
         messages.success(request, "Comment posted.")
         return redirect("admin-ticket-detail", ticket_id=ticket.id)
 
+    username_display = request.user.username if request.user.is_authenticated else "anonymous"
     return render(
         request,
         "admin_ticket_detail.html",
@@ -843,6 +853,7 @@ def admin_ticket_detail(request: HttpRequest, ticket_id: int) -> HttpResponse:
             "comments": comments,
             "can_update": request.user.is_superuser,
             "status_choices": Ticket.STATUS_CHOICES,
+            "username_display": username_display,
         },
     )
 

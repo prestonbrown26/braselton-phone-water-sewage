@@ -257,6 +257,17 @@
           </tbody>
         </table>
       </div>
+      {% if page_obj and page_obj.has_other_pages %}
+      <div class="pagination" style="display:flex; gap:10px; align-items:center; margin-top:12px; font-size:13px;">
+        {% if page_obj.has_previous %}
+        <a href="?page={{ page_obj.previous_page_number }}&status={{ status_filter }}&type={{ type_filter }}&q={{ search }}" style="padding:6px 10px; border:1px solid #d1d5db; border-radius:8px; text-decoration:none; color:#111827;">Previous</a>
+        {% endif %}
+        <span>Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+        {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}&status={{ status_filter }}&type={{ type_filter }}&q={{ search }}" style="padding:6px 10px; border:1px solid #d1d5db; border-radius:8px; text-decoration:none; color:#111827;">Next</a>
+        {% endif %}
+      </div>
+      {% endif %}
     </div>
   </div>
 </div>
