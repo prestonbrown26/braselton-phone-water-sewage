@@ -108,6 +108,43 @@ class PhoneConfiguration(models.Model):
         return "PhoneConfiguration"
 
 
+class InviteToken(models.Model):
+    """One-time token for inviting a new user."""
+
+    email = models.EmailField(db_index=True)
+    token = models.CharField(max_length=128, unique=True, db_index=True)
+    invited_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
+    is_staff = models.BooleanField(default=True)
+    is_superuser = models.BooleanField(default=False)
+    expires_at = models.DateTimeField(db_index=True)
+    created_at = models.DateTimeField(default=timezone.now, db_index=True)
+    used = models.BooleanField(default=False)
+
+    class Meta:
+        db_table = "invite_tokens"
+        ordering = ["-created_at"]
+
+    def __str__(self) -> str:  # pragma: no cover
+        return f"InviteToken({self.email})"
+
+
+class PasswordResetToken(models.Model):
+    """One-time token for password reset."""
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="reset_tokens")
+    token = models.CharField(max_length=128, unique=True, db_index=True)
+    expires_at = models.DateTimeField(db_index=True)
+    created_at = models.DateTimeField(default=timezone.now, db_index=True)
+    used = models.BooleanField(default=False)
+
+    class Meta:
+        db_table = "password_reset_tokens"
+        ordering = ["-created_at"]
+
+    def __str__(self) -> str:  # pragma: no cover
+        return f"PasswordResetToken({self.user_id})"
+
+
 # We rely on Django's built-in User model for admin accounts.
 User = settings.AUTH_USER_MODEL
 

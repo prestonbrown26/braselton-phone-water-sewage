@@ -7,7 +7,8 @@ import io
 import json
 import logging
 import re
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
+import uuid
 from typing import Iterable
 
 from django.conf import settings
@@ -21,6 +22,7 @@ from django.http import HttpRequest, HttpResponse, JsonResponse, StreamingHttpRe
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.csrf import csrf_exempt
+from django.core.mail import send_mail
 
 from .email_templates import DEFAULT_EMAIL_TEMPLATES, ensure_all_email_templates, ensure_email_template
 from .email_utils import send_billing_email
@@ -30,6 +32,8 @@ from .models import (
     EmailTemplateConfig,
     PhoneConfiguration,
     TransferEvent,
+    InviteToken,
+    PasswordResetToken,
 )
 from .utils import format_eastern, verify_webhook_secret
 
@@ -359,6 +363,82 @@ def admin_logout(request: HttpRequest) -> HttpResponse:
     return redirect("admin-login")
 
 
+def forgot_password(request: HttpRequest) -> HttpResponse:
+    if request.method == "POST":
+        email = (request.POST.get("email") or "").strip()
+        if not email:
+            messages.error(request, "Email is required.")
+            return redirect("forgot-password")
+        user = User.objects.filter(email__iexact=email).first()
+        if not user:
+            messages.error(request, "If that email exists, a reset link will be sent.")
+            return redirect("forgot-password")
+        token = uuid.uuid4().hex
+        expires_at = datetime.now(timezone.utc) + timedelta(hours=2)
+        PasswordResetToken.objects.create(user=user, token=token, expires_at=expires_at)
+        reset_link = request.build_absolute_uri(reverse("reset-password") + f"?token={token}")
+        send_mail(
+            subject="Reset your Braselton Utilities admin password",
+            message=f"Click to reset your password: {reset_link}\n\nThis link expires in 2 hours.",
+            from_email=getattr(settings, "EMAIL_FROM_ADDRESS", None),
+            recipient_list=[email],
+            fail_silently=False,
+        )
+        messages.success(request, "If that email exists, a reset link has been sent.")
+        return redirect("forgot-password")
+    return render(request, "forgot_password.html")
+
+
+def reset_password(request: HttpRequest) -> HttpResponse:
+    token_val = request.GET.get("token") or request.POST.get("token")
+    if not token_val:
+        return render(request, "password_reset.html", {"error": "Missing token"}, status=400)
+    token = PasswordResetToken.objects.filter(token=token_val, used=False).first()
+    if not token or token.expires_at < datetime.now(timezone.utc):
+        return render(request, "password_reset.html", {"error": "Token is invalid or expired"}, status=400)
+    if request.method == "POST":
+        password = (request.POST.get("password") or "").strip()
+        if not password:
+            return render(request, "password_reset.html", {"error": "Password is required", "token": token_val}, status=400)
+        user = token.user
+        user.set_password(password)
+        user.save()
+        token.used = True
+        token.save(update_fields=["used"])
+        messages.success(request, "Password reset. Please sign in.")
+        return redirect("admin-login")
+    return render(request, "password_reset.html", {"token": token_val})
+
+
+def accept_invite(request: HttpRequest) -> HttpResponse:
+    token_val = request.GET.get("token") or request.POST.get("token")
+    if not token_val:
+        return render(request, "accept_invite.html", {"error": "Missing token"}, status=400)
+    invite = InviteToken.objects.filter(token=token_val, used=False).first()
+    if not invite or invite.expires_at < datetime.now(timezone.utc):
+        return render(request, "accept_invite.html", {"error": "Invite is invalid or expired"}, status=400)
+    if request.method == "POST":
+        username = (request.POST.get("username") or "").strip()
+        password = (request.POST.get("password") or "").strip()
+        if not username or not password:
+            return render(request, "accept_invite.html", {"error": "Username and password are required", "token": token_val}, status=400)
+        if User.objects.filter(username=username).exists():
+            return render(request, "accept_invite.html", {"error": "Username already taken", "token": token_val}, status=400)
+        user = User.objects.create_user(
+            username=username,
+            password=password,
+            email=invite.email,
+            is_staff=invite.is_staff,
+            is_superuser=invite.is_superuser,
+            is_active=True,
+        )
+        invite.used = True
+        invite.save(update_fields=["used"])
+        messages.success(request, "Account created. Please sign in.")
+        return redirect("admin-login")
+    return render(request, "accept_invite.html", {"token": token_val, "email": invite.email})
+
+
 # ---------------------------------------------------------------------------
 # Admin views
 # ---------------------------------------------------------------------------
@@ -455,8 +535,6 @@ def admin_transcripts(request: HttpRequest) -> HttpResponse:
 
 @login_required
 def admin_settings(request: HttpRequest) -> HttpResponse:
-    if not request.user.is_staff and not request.user.is_superuser:
-        return render(request, "admin_home.html", {"active_page": "home"}, status=403)
     # Handle Phone Configuration
     phone_config = PhoneConfiguration.objects.first()
     if not phone_config:
@@ -491,6 +569,9 @@ def admin_settings(request: HttpRequest) -> HttpResponse:
             return redirect("admin-settings")
 
         if "user_form" in request.POST:
+            if not request.user.is_superuser:
+                messages.error(request, "Only superusers can create or edit users.")
+                return redirect("admin-settings")
             username = (request.POST.get("username") or "").strip()
             password = (request.POST.get("password") or "").strip()
 
@@ -511,6 +592,9 @@ def admin_settings(request: HttpRequest) -> HttpResponse:
             return redirect("admin-settings")
 
         if "user_delete_id" in request.POST:
+            if not request.user.is_superuser:
+                messages.error(request, "Only superusers can delete users.")
+                return redirect("admin-settings")
             user_id = request.POST.get("user_delete_id")
             try:
                 target = User.objects.get(id=user_id)
@@ -522,6 +606,32 @@ def admin_settings(request: HttpRequest) -> HttpResponse:
                 return redirect("admin-settings")
             target.delete()
             messages.success(request, f"User '{target.username}' deleted.")
+            return redirect("admin-settings")
+
+        if "invite_email" in request.POST:
+            invite_email = (request.POST.get("invite_email") or "").strip()
+            if not invite_email:
+                messages.error(request, "Email is required.")
+                return redirect("admin-settings")
+            token = uuid.uuid4().hex
+            expires_at = datetime.now(timezone.utc) + timedelta(days=2)
+            InviteToken.objects.create(
+                email=invite_email,
+                token=token,
+                invited_by=request.user,
+                is_staff=True,
+                is_superuser=False,
+                expires_at=expires_at,
+            )
+            invite_link = request.build_absolute_uri(reverse("accept-invite") + f"?token={token}")
+            send_mail(
+                subject="You're invited to Braselton Utilities Admin",
+                message=f"You have been invited to create an account.\n\nClick to accept: {invite_link}\n\nThis link expires in 48 hours.",
+                from_email=getattr(settings, "EMAIL_FROM_ADDRESS", None),
+                recipient_list=[invite_email],
+                fail_silently=False,
+            )
+            messages.success(request, f"Invite sent to {invite_email}")
             return redirect("admin-settings")
 
     users = User.objects.all().order_by("-date_joined")
@@ -538,6 +648,7 @@ def admin_settings(request: HttpRequest) -> HttpResponse:
             "config": phone_config,
             "transfer_entries": transfer_entries,
             "users": users,
+            "can_manage_users": request.user.is_superuser,
             "active_page": "admin-settings",
         },
     )

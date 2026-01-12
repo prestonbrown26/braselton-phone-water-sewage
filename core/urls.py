@@ -11,6 +11,9 @@ urlpatterns = [
     # Admin
     path("admin/login/", views.admin_login, name="admin-login"),
     path("admin/logout/", views.admin_logout, name="admin-logout"),
+    path("forgot-password/", views.forgot_password, name="forgot-password"),
+    path("reset-password/", views.reset_password, name="reset-password"),
+    path("accept-invite/", views.accept_invite, name="accept-invite"),
     path("admin/", views.admin_dashboard, name="admin-dashboard"),
     path("admin/calls/", views.admin_calls, name="admin-calls"),
     path("admin/transcripts/", views.admin_transcripts, name="admin-transcripts"),

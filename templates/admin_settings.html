@@ -178,6 +178,8 @@
 
     <div class="card-section">
       <h2 class="section-title">Users</h2>
+
+      {% if can_manage_users %}
       <form method="post" action="{% url 'admin-settings' %}" id="user-form">
         {% csrf_token %}
         <input type="hidden" name="user_form" value="1" />
@@ -193,35 +195,45 @@
         </div>
         <button type="submit">Save User</button>
       </form>
+      {% else %}
+      <div style="margin-bottom:12px;">
+        <p class="muted">Invite a new user by email. They will choose username and password.</p>
+        <button type="button" class="icon-btn add-btn" onclick="openInviteModal()">Invite User</button>
+      </div>
+      {% endif %}
 
       <table>
         <thead>
           <tr>
             <th>Username</th>
+            <th>Email</th>
             <th>Date Joined</th>
             <th>Active</th>
             <th>Staff</th>
-            <th>Actions</th>
+            {% if can_manage_users %}<th>Actions</th>{% endif %}
           </tr>
         </thead>
         <tbody>
           {% for user in users %}
           <tr>
             <td>{{ user.username }}</td>
+            <td>{{ user.email|default:"—" }}</td>
             <td>{{ user.display_joined }}</td>
             <td>{{ user.is_active }}</td>
             <td>{{ user.is_staff }}</td>
-            <td class="actions-cell">
-              <form method="post" action="{% url 'admin-settings' %}" onsubmit="return confirm('Delete user {{ user.username }}?');">
-                {% csrf_token %}
-                <input type="hidden" name="user_delete_id" value="{{ user.id }}">
-                <button type="submit" class="icon-btn danger">Delete</button>
-              </form>
-            </td>
+            {% if can_manage_users %}
+              <td class="actions-cell">
+                <form method="post" action="{% url 'admin-settings' %}" onsubmit="return confirm('Delete user {{ user.username }}?');">
+                  {% csrf_token %}
+                  <input type="hidden" name="user_delete_id" value="{{ user.id }}">
+                  <button type="submit" class="icon-btn danger">Delete</button>
+                </form>
+              </td>
+            {% endif %}
           </tr>
           {% empty %}
           <tr>
-            <td colspan="5">No users found.</td>
+            <td colspan="{% if can_manage_users %}6{% else %}5{% endif %}">No users found.</td>
           </tr>
           {% endfor %}
         </tbody>
@@ -266,5 +278,37 @@
   }
   attachLoading("phone-form");
   attachLoading("user-form");
+  function openInviteModal() {
+    const modal = document.getElementById("invite-modal");
+    modal.style.display = "flex";
+  }
+  function closeInviteModal() {
+    const modal = document.getElementById("invite-modal");
+    modal.style.display = "none";
+  }
+</script>
+
+<div id="invite-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.45); align-items:center; justify-content:center; z-index:50;">
+  <div style="background:#fff; padding:20px; border-radius:12px; width:320px; max-width:90%; box-shadow:0 10px 40px rgba(0,0,0,0.2);">
+    <h3 style="margin-top:0;">Invite User</h3>
+    <form method="post" action="{% url 'admin-settings' %}" id="invite-form">
+      {% csrf_token %}
+      <input type="hidden" name="invite_email" value="" />
+      <div class="form-group" style="margin-bottom:12px;">
+        <label for="invite_email_input">Email</label>
+        <input type="email" id="invite_email_input" name="invite_email_input" required style="width:100%; padding:10px; border:1px solid var(--border); border-radius:8px;">
+      </div>
+      <div style="display:flex; gap:10px; justify-content:flex-end;">
+        <button type="button" class="icon-btn" onclick="closeInviteModal()">Cancel</button>
+        <button type="submit" class="icon-btn add-btn" onclick="syncInviteEmail()">Send Invite</button>
+      </div>
+    </form>
+  </div>
+</div>
+<script>
+  function syncInviteEmail() {
+    const val = document.getElementById("invite_email_input").value;
+    document.querySelector("input[name='invite_email']").value = val;
+  }
 </script>
 {% endblock %}
