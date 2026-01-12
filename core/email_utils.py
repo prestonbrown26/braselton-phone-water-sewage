@@ -31,7 +31,7 @@ def send_billing_email(*, to_address: str, subject: str, body: str) -> None:
         logger.warning("SMTP2Go credentials are not fully configured; skipping email send")
         return
 
-    from_address = getattr(settings, "EMAIL_FROM_ADDRESS", "utilitybilling@braselton.net")
+    from_address = getattr(settings, "EMAIL_FROM_AGENT", getattr(settings, "EMAIL_FROM_ADDRESS", "utilitybilling@braselton.net"))
     email = EmailMessage(subject=subject, body=body, from_email=from_address, to=[to_address])
 
     backend_cls = _get_backend_class()
@@ -46,7 +46,7 @@ def send_billing_email(*, to_address: str, subject: str, body: str) -> None:
 
     logger.info("Sending SMTP2Go email to %s", to_address)
     try:
-        backend.send_messages([email])
+    backend.send_messages([email])
     except Exception as exc:  # pragma: no cover - network dependent
         logger.error("Failed to send email to %s: %s", to_address, exc)
         raise

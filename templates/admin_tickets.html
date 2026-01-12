@@ -1,0 +1,159 @@
+{% extends "admin_base.html" %}
+{% block title %}Tickets - Braselton Water/Sewer{% endblock %}
+{% block extra_css %}
+<style>
+  .filters {
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    margin-bottom:12px;
+  }
+  .filters input,
+  .filters select {
+    padding:8px 10px;
+    border:1px solid #d1d5db;
+    border-radius:8px;
+    font-size:13px;
+  }
+  .table-wrap {
+    overflow:auto;
+  }
+  table {
+    width:100%;
+    border-collapse:collapse;
+    font-size:13px;
+  }
+  th, td {
+    padding:8px;
+    border-bottom:1px solid #e5e7eb;
+    text-align:left;
+  }
+  th { background:#f3f4f6; color:#4b5563; }
+  .actions {
+    display:flex;
+    gap:6px;
+    align-items:center;
+  }
+  .btn-primary {
+    background:var(--brand);
+    color:#fff;
+    border:none;
+    border-radius:8px;
+    padding:8px 10px;
+    font-weight:700;
+    cursor:pointer;
+    font-size:12px;
+  }
+  .pill {
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    padding:6px 10px;
+    border-radius:999px;
+    background:#eef2ff;
+    color:#3730a3;
+    font-weight:700;
+    font-size:12px;
+  }
+  .pagination {
+    display:flex;
+    gap:8px;
+    align-items:center;
+    margin-top:12px;
+    font-size:13px;
+  }
+  .pagination a {
+    padding:6px 10px;
+    border:1px solid #d1d5db;
+    border-radius:8px;
+    text-decoration:none;
+    color:#111827;
+  }
+  .pagination .current {
+    font-weight:700;
+  }
+</style>
+{% endblock %}
+{% block content %}
+<div class="card">
+  <h1>Tickets</h1>
+  <p class="muted">All submitted tickets. Superusers can update status; others are read-only.</p>
+
+  <form method="get" class="filters">
+    <input type="text" name="q" placeholder="Search title..." value="{{ search }}">
+    <select name="status">
+      <option value="">All statuses</option>
+      {% for key,label in status_choices %}
+      <option value="{{ key }}" {% if status_filter == key %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+    <select name="type">
+      <option value="">All types</option>
+      {% for key,label in type_choices %}
+      <option value="{{ key }}" {% if type_filter == key %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+    <button type="submit" class="btn-primary">Filter</button>
+    <a href="{% url 'admin-tickets' %}" class="pill">Reset</a>
+  </form>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Title</th>
+          <th>Type</th>
+          <th>Status</th>
+          <th>Submitted</th>
+          <th>User</th>
+          <th>Description</th>
+          {% if can_update %}<th>Actions</th>{% endif %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for t in tickets %}
+        <tr>
+          <td style="font-weight:600;">{{ t.title }}</td>
+          <td style="text-transform:capitalize;">{{ t.get_ticket_type_display }}</td>
+          <td>{{ t.get_status_display }}</td>
+          <td>{{ t.created_at|date:"M j, Y H:i" }}</td>
+          <td>{{ t.user.username|default:"-" }}</td>
+          <td style="max-width:320px; white-space:pre-wrap;">{{ t.description }}</td>
+          {% if can_update %}
+          <td>
+            <form method="post" action="{% url 'admin-tickets' %}" class="actions">
+              {% csrf_token %}
+              <input type="hidden" name="ticket_status_form" value="1" />
+              <input type="hidden" name="ticket_id" value="{{ t.id }}" />
+              <select name="ticket_status" style="padding:6px 8px; border:1px solid #d1d5db; border-radius:8px; font-size:13px;">
+                {% for key,label in t.STATUS_CHOICES %}
+                <option value="{{ key }}" {% if t.status == key %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+              </select>
+              <button type="submit" class="btn-primary">Update</button>
+            </form>
+          </td>
+          {% endif %}
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="{% if can_update %}7{% else %}6{% endif %}" style="text-align:center; padding:12px; color:#6b7280;">No tickets found.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if page_obj.has_other_pages %}
+  <div class="pagination">
+    {% if page_obj.has_previous %}
+    <a href="?page={{ page_obj.previous_page_number }}&status={{ status_filter }}&type={{ type_filter }}&q={{ search }}">Previous</a>
+    {% endif %}
+    <span class="current">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+    {% if page_obj.has_next %}
+    <a href="?page={{ page_obj.next_page_number }}&status={{ status_filter }}&type={{ type_filter }}&q={{ search }}">Next</a>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

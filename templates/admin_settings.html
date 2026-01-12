@@ -216,24 +216,10 @@
         <label>Transfer Request Recipient (configured by superuser)</label>
         <p class="muted">{{ config.transfer_request_email|default:"Not set" }}</p>
       </div>
-      <h3 class="section-title" style="margin-top:16px;">Request transfer change</h3>
-      <form method="post" action="{% url 'admin-settings' %}">
-        {% csrf_token %}
-        <input type="hidden" name="transfer_request" value="1" />
-        <div class="form-group">
-          <label for="req_transfer_label">Label</label>
-          <input type="text" id="req_transfer_label" name="req_transfer_label" placeholder="Town Hall Office" />
-        </div>
-        <div class="form-group">
-          <label for="req_transfer_number">Phone Number</label>
-          <input type="tel" id="req_transfer_number" name="req_transfer_number" placeholder="+1-770-867-4488" required />
-        </div>
-        <div class="form-group">
-          <label for="req_transfer_description">Description</label>
-          <textarea id="req_transfer_description" name="req_transfer_description" placeholder="Why this change is needed"></textarea>
-        </div>
-        <button type="submit">Send Request</button>
-      </form>
+      <div class="form-group">
+        <p class="muted">To request transfer changes, please submit via Feedback &amp; Tickets.</p>
+        <a href="{% url 'admin-feedback' %}" class="icon-btn add-btn">Open Feedback &amp; Tickets</a>
+      </div>
       {% endif %}
     </div>
 
@@ -306,6 +292,7 @@
       </table>
       </div>
     </div>
+
   </div>
 </div>
 <script>

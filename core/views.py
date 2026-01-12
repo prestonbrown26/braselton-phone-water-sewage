@@ -33,6 +33,8 @@ from .models import (
     TransferEvent,
     InviteToken,
     PasswordResetToken,
+    Ticket,
+    TicketComment,
 )
 from .utils import format_eastern, verify_webhook_secret
 
@@ -381,7 +383,7 @@ def forgot_password(request: HttpRequest) -> HttpResponse:
         send_mail(
             subject="Reset your Braselton Water/Sewer admin password",
             message=f"Click to reset your password: {reset_link}\n\nThis link expires in 2 hours.",
-            from_email=getattr(settings, "EMAIL_FROM_ADDRESS", None),
+            from_email=getattr(settings, "EMAIL_FROM_APP", None),
             recipient_list=[email],
             fail_silently=False,
         )
@@ -445,36 +447,6 @@ def accept_invite(request: HttpRequest) -> HttpResponse:
 # ---------------------------------------------------------------------------
 @login_required
 def admin_dashboard(request: HttpRequest) -> HttpResponse:
-    if request.method == "POST" and request.POST.get("ticket_form"):
-        title = (request.POST.get("ticket_title") or "").strip()
-        ticket_type = (request.POST.get("ticket_type") or "feature").strip()
-        description = (request.POST.get("ticket_description") or "").strip()
-        recipient = None
-        phone_config = PhoneConfiguration.objects.first()
-        if phone_config and phone_config.transfer_request_email:
-            recipient = phone_config.transfer_request_email
-        if not recipient:
-            recipient = getattr(settings, "EMAIL_FROM_ADDRESS", None)
-        if not recipient:
-            messages.error(request, "Ticket could not be sent: no recipient configured.")
-        else:
-            user_email = request.user.email if request.user.is_authenticated else "n/a"
-            body = (
-                f"New ticket submitted by {request.user.username} (email: {user_email})\n"
-                f"Type: {ticket_type}\n"
-                f"Title: {title or 'No title'}\n\n"
-                f"Description:\n{description}"
-            )
-            send_mail(
-                subject=f"[Ticket] {ticket_type.capitalize()}: {title or 'No title'}",
-                message=body,
-                from_email=getattr(settings, "EMAIL_FROM_ADDRESS", None),
-                recipient_list=[recipient],
-                fail_silently=False,
-            )
-            messages.success(request, "Ticket submitted. Thank you for the feedback.")
-        return redirect("admin-dashboard")
-
     total_calls = CallLog.objects.count()
     latest_call = CallLog.objects.first()
     total_emails = EmailEvent.objects.count()
@@ -604,35 +576,6 @@ def admin_settings(request: HttpRequest) -> HttpResponse:
             messages.success(request, "Phone configuration saved.")
             return redirect("admin-settings")
 
-        if "transfer_request" in request.POST:
-            req_label = (request.POST.get("req_transfer_label") or "").strip()
-            req_number = (request.POST.get("req_transfer_number") or "").strip()
-            req_desc = (request.POST.get("req_transfer_description") or "").strip()
-            if not req_number:
-                messages.error(request, "Transfer number is required for a request.")
-                return redirect("admin-settings")
-            body = (
-                f"Transfer number change requested by {request.user.username} (email: {request.user.email or 'n/a'}).\n\n"
-                f"Label: {req_label or 'n/a'}\n"
-                f"Number: {req_number}\n"
-                f"Description: {req_desc or 'n/a'}\n"
-            )
-            recipient = phone_config.transfer_request_email or getattr(
-                settings, "EMAIL_FROM_ADDRESS", None
-            )
-            if not recipient:
-                messages.error(request, "Request email recipient is not configured.")
-            else:
-                send_mail(
-                    subject="Transfer number change request",
-                    message=body,
-                    from_email=getattr(settings, "EMAIL_FROM_ADDRESS", None),
-                    recipient_list=[recipient],
-                    fail_silently=False,
-                )
-                messages.success(request, "Request sent for transfer number change.")
-            return redirect("admin-settings")
-
         if "user_form" in request.POST:
             if not request.user.is_superuser:
                 messages.error(request, "Only superusers can create or edit users.")
@@ -694,7 +637,7 @@ def admin_settings(request: HttpRequest) -> HttpResponse:
             send_mail(
                 subject="You're invited to Braselton Water/Sewer Admin",
                 message=f"You have been invited to create an account for the Braselton Water/Sewer AI Agent Dashboard.\n\nClick to accept: {invite_link}\n\nThis link expires in 48 hours.",
-                from_email=getattr(settings, "EMAIL_FROM_ADDRESS", None),
+            from_email=getattr(settings, "EMAIL_FROM_APP", None),
                 recipient_list=[invite_email],
                 fail_silently=False,
             )
@@ -720,6 +663,194 @@ def admin_settings(request: HttpRequest) -> HttpResponse:
             "active_page": "admin-settings",
         },
     )
+
+
+@login_required
+def admin_feedback(request: HttpRequest) -> HttpResponse:
+    phone_config = PhoneConfiguration.objects.first()
+    if not phone_config:
+        phone_config = PhoneConfiguration.objects.create(
+            retell_ai_phone_number=None,
+            retell_ai_phone_label=None,
+            transfer_phone_numbers=[],
+            transfer_phone_book=[],
+        )
+
+    if request.method == "POST":
+        if request.POST.get("ticket_form"):
+            title = (request.POST.get("ticket_title") or "").strip()
+            ticket_type = (request.POST.get("ticket_type") or "feature").strip()
+            description = (request.POST.get("ticket_description") or "").strip()
+            transfer_label = (request.POST.get("transfer_label") or "").strip()
+            transfer_number = (request.POST.get("transfer_number") or "").strip()
+
+            if ticket_type == "transfer_change" and not transfer_number:
+                messages.error(request, "Transfer number is required for a transfer change request.")
+                return redirect("admin-feedback")
+
+            # Augment description with transfer details when applicable
+            if ticket_type == "transfer_change":
+                extra_lines = []
+                if transfer_label:
+                    extra_lines.append(f"Requested Label: {transfer_label}")
+                if transfer_number:
+                    extra_lines.append(f"Requested Number: {transfer_number}")
+                if extra_lines:
+                    description = (description + "\n\n" if description else "") + "\n".join(extra_lines)
+
+            Ticket.objects.create(
+                user=request.user if request.user.is_authenticated else None,
+                title=title or "No title",
+                ticket_type=ticket_type or "feature",
+                description=description,
+            )
+
+            recipient = None
+            if phone_config and phone_config.transfer_request_email:
+                recipient = phone_config.transfer_request_email
+            if not recipient:
+                recipient = getattr(settings, "EMAIL_FROM_APP", None)
+
+            if not recipient:
+                messages.error(request, "Ticket saved, but no recipient configured to email.")
+            else:
+                user_email = request.user.email if request.user.is_authenticated else "n/a"
+                body = (
+                    f"New ticket submitted by {request.user.username} (email: {user_email})\n"
+                    f"Type: {ticket_type}\n"
+                    f"Title: {title or 'No title'}\n\n"
+                    f"Description:\n{description}"
+                )
+                if ticket_type == "transfer_change":
+                    body += "\n\nTransfer Change Details:\n"
+                    body += f"Label: {transfer_label or 'n/a'}\n"
+                    body += f"Number: {transfer_number or 'n/a'}"
+                send_mail(
+                    subject=f"[Ticket] {ticket_type.capitalize()}: {title or 'No title'}",
+                    message=body,
+                    from_email=getattr(settings, "EMAIL_FROM_APP", None),
+                    recipient_list=[recipient],
+                    fail_silently=False,
+                )
+                messages.success(request, "Ticket submitted and emailed. Thank you for the feedback.")
+            return redirect("admin-feedback")
+
+        if request.POST.get("ticket_status_form") and request.user.is_superuser:
+            ticket_id = request.POST.get("ticket_id")
+            new_status = (request.POST.get("ticket_status") or "").strip()
+            if new_status not in dict(Ticket.STATUS_CHOICES):
+                messages.error(request, "Invalid status.")
+                return redirect("admin-feedback")
+            try:
+                t = Ticket.objects.get(id=ticket_id)
+            except Ticket.DoesNotExist:
+                messages.error(request, "Ticket not found.")
+                return redirect("admin-feedback")
+            t.status = new_status
+            t.save(update_fields=["status", "updated_at"])
+            messages.success(request, f"Ticket '{t.title}' updated to {t.get_status_display()}.")
+            return redirect("admin-feedback")
+
+    tickets = Ticket.objects.all()
+    status_filter = request.GET.get("status") or ""
+    type_filter = request.GET.get("type") or ""
+    search = (request.GET.get("q") or "").strip()
+
+    if status_filter:
+        tickets = tickets.filter(status=status_filter)
+    if type_filter:
+        tickets = tickets.filter(ticket_type=type_filter)
+    if search:
+        tickets = tickets.filter(title__icontains=search)
+
+    tickets = tickets.order_by("-created_at")
+
+    return render(
+        request,
+        "admin_feedback.html",
+        {
+            "active_page": "feedback",
+            "recipient": phone_config.transfer_request_email
+            or getattr(settings, "EMAIL_FROM_ADDRESS", None),
+            "tickets": tickets,
+            "can_update": request.user.is_superuser,
+            "status_choices": Ticket.STATUS_CHOICES,
+            "type_choices": Ticket.TYPE_CHOICES,
+            "status_filter": status_filter,
+            "type_filter": type_filter,
+            "search": search,
+        },
+    )
+
+
+@login_required
+def admin_ticket_detail(request: HttpRequest, ticket_id: int) -> HttpResponse:
+    ticket = get_object_or_404(Ticket, id=ticket_id)
+    comments = list(ticket.comments.select_related("user").order_by("created_at"))
+
+    if request.method == "POST":
+        body = (request.POST.get("comment") or "").strip()
+        if not body:
+            messages.error(request, "Comment cannot be empty.")
+            return redirect("admin-ticket-detail", ticket_id=ticket.id)
+
+        TicketComment.objects.create(ticket=ticket, user=request.user, body=body)
+
+        # Build notification recipients
+        recipients: set[str] = set()
+        author_email = (request.user.email or "").strip() if request.user.is_authenticated else ""
+
+        # Gather previous commenters with emails (excluding author)
+        for c in comments:
+            if c.user and c.user.email and c.user.email != author_email:
+                recipients.add(c.user.email)
+
+        # If author is superuser: notify all users involved (ticket.user + previous commenters)
+        # If author is not superuser: notify all superusers + previous commenters
+        if request.user.is_superuser:
+            if ticket.user and ticket.user.email and ticket.user.email != author_email:
+                recipients.add(ticket.user.email)
+        else:
+            for su in User.objects.filter(is_superuser=True, is_active=True).exclude(email__isnull=True):
+                if su.email and su.email != author_email:
+                    recipients.add(su.email)
+
+        if recipients:
+            subject = f"[Ticket #{ticket.id}] {ticket.title}"
+            message = (
+                f"New comment on ticket '{ticket.title}'\n"
+                f"By: {request.user.username} ({author_email or 'n/a'})\n\n"
+                f"{body}\n\n"
+                f"View: {request.build_absolute_uri(reverse('admin-ticket-detail', args=[ticket.id]))}"
+            )
+            send_mail(
+                subject=subject,
+                message=message,
+                from_email=getattr(settings, "EMAIL_FROM_APP", None),
+                recipient_list=list(recipients),
+                fail_silently=False,
+            )
+
+        messages.success(request, "Comment posted.")
+        return redirect("admin-ticket-detail", ticket_id=ticket.id)
+
+    return render(
+        request,
+        "admin_ticket_detail.html",
+        {
+            "active_page": "feedback",
+            "ticket": ticket,
+            "comments": comments,
+            "can_update": request.user.is_superuser,
+            "status_choices": Ticket.STATUS_CHOICES,
+        },
+    )
+
+
+@login_required
+def admin_tickets(request: HttpRequest) -> HttpResponse:
+    # Keep route for compatibility; redirect to consolidated page.
+    return redirect("admin-feedback")
 
 
 @login_required

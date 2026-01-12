@@ -155,6 +155,12 @@
           class="{% if active_page == 'admin-settings' %}active{% endif %}"
           >Admin</a
         >
+        <a
+          href="{% url 'admin-feedback' %}"
+          class="{% if active_page == 'feedback' %}active{% endif %}"
+          style="margin-left:auto; font-weight:700;"
+          >Feedback &amp; Tickets</a
+        >
         <a href="{% url 'admin-logout' %}">Logout</a>
       </nav>
     </header>

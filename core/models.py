@@ -5,6 +5,7 @@ from __future__ import annotations
 from django.conf import settings
 from django.db import models
 from django.utils import timezone
+from django.contrib.auth import get_user_model
 
 
 class CallLog(models.Model):
@@ -107,6 +108,50 @@ class PhoneConfiguration(models.Model):
 
     def __str__(self) -> str:  # pragma: no cover
         return "PhoneConfiguration"
+
+
+class Ticket(models.Model):
+    STATUS_CHOICES = [
+        ("open", "Open"),
+        ("in_progress", "In Progress"),
+        ("resolved", "Resolved"),
+        ("closed", "Closed"),
+    ]
+    TYPE_CHOICES = [
+        ("feature", "Feature Request"),
+        ("bug", "Bug"),
+        ("kb_update", "Knowledge Base Update"),
+        ("transfer_change", "Transfer Number Change"),
+        ("other", "Other"),
+    ]
+
+    user = models.ForeignKey(get_user_model(), on_delete=models.SET_NULL, null=True, blank=True)
+    title = models.CharField(max_length=200)
+    ticket_type = models.CharField(max_length=20, choices=TYPE_CHOICES, default="feature")
+    description = models.TextField()
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="open")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self) -> str:  # pragma: no cover - representation
+        return f"[{self.get_status_display()}] {self.title}"
+
+    class Meta:
+        ordering = ["-created_at"]
+
+
+class TicketComment(models.Model):
+    ticket = models.ForeignKey(Ticket, related_name="comments", on_delete=models.CASCADE)
+    user = models.ForeignKey(get_user_model(), on_delete=models.SET_NULL, null=True, blank=True)
+    body = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["created_at"]
+
+    def __str__(self) -> str:  # pragma: no cover
+        author = self.user.username if self.user else "unknown"
+        return f"Comment by {author} on {self.ticket_id}"
 
 
 class InviteToken(models.Model):

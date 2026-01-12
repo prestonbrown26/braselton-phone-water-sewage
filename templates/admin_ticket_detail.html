@@ -1,0 +1,98 @@
+{% extends "admin_base.html" %}
+{% block title %}Ticket {{ ticket.id }} - Braselton Water/Sewer{% endblock %}
+{% block extra_css %}
+<style>
+  .card-panel {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 14px;
+    padding: 18px;
+    box-shadow: 0 12px 30px rgba(17, 24, 39, 0.08);
+    margin-bottom: 18px;
+  }
+  .meta {
+    display:flex;
+    gap:12px;
+    flex-wrap:wrap;
+    margin:8px 0 12px 0;
+  }
+  .pill {
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    padding:6px 10px;
+    border-radius:999px;
+    background:#eef2ff;
+    color:#3730a3;
+    font-weight:700;
+    font-size:12px;
+  }
+  .muted { color:#6b7280; font-size:13px; }
+  .comment {
+    border-bottom:1px solid #e5e7eb;
+    padding:10px 0;
+  }
+  .comment:last-child { border-bottom:none; }
+  .comment .author { font-weight:700; }
+  .comment .time { color:#6b7280; font-size:12px; }
+  textarea {
+    width:100%;
+    min-height:120px;
+    padding:10px 12px;
+    border:1px solid #d1d5db;
+    border-radius:10px;
+    font-size:14px;
+    resize:vertical;
+  }
+  .btn-primary {
+    background:var(--brand);
+    color:#fff;
+    border:none;
+    border-radius:10px;
+    padding:10px 14px;
+    font-weight:700;
+    cursor:pointer;
+  }
+</style>
+{% endblock %}
+{% block content %}
+<div class="card" style="padding:22px;">
+  <a href="{% url 'admin-feedback' %}" style="text-decoration:none; color:var(--brand); font-weight:700;">← Back to Tickets</a>
+  <h1 style="margin:8px 0 4px 0;">{{ ticket.title }}</h1>
+  <p class="muted" style="margin:0 0 10px 0;">Ticket #{{ ticket.id }}</p>
+
+  <div class="card-panel">
+    <div class="meta">
+      <span class="pill">{{ ticket.get_ticket_type_display }}</span>
+      <span class="pill">{{ ticket.get_status_display }}</span>
+      <span class="pill">Created {{ ticket.created_at|date:"M j, Y H:i" }}</span>
+      {% if ticket.user %}<span class="pill">User: {{ ticket.user.username }}</span>{% endif %}
+    </div>
+    <p style="white-space:pre-wrap;">{{ ticket.description }}</p>
+  </div>
+
+  <div class="card-panel">
+    <h3 class="section-title" style="margin:0 0 10px 0;">Comments</h3>
+    {% if comments %}
+      {% for c in comments %}
+      <div class="comment">
+        <div class="author">{{ c.user.username|default:"(deleted user)" }}</div>
+        <div class="time">{{ c.created_at|date:"M j, Y H:i" }}</div>
+        <div style="margin-top:6px; white-space:pre-wrap;">{{ c.body }}</div>
+      </div>
+      {% endfor %}
+    {% else %}
+      <p class="muted">No comments yet.</p>
+    {% endif %}
+
+    <form method="post" action="{% url 'admin-ticket-detail' ticket.id %}" style="margin-top:12px;">
+      {% csrf_token %}
+      <div class="form-group">
+        <label for="comment" style="font-weight:700; color:#374151;">Add a comment</label>
+        <textarea id="comment" name="comment" placeholder="Write an update..."></textarea>
+      </div>
+      <button type="submit" class="btn-primary">Post Comment</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

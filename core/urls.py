@@ -20,6 +20,8 @@ urlpatterns = [
     path("admin/export/", views.admin_export, name="admin-export-calls"),
     path("admin/email-templates/", views.manage_email_templates, name="admin-manage-email-templates"),
     path("admin/settings/", views.admin_settings, name="admin-settings"),
+    path("admin/feedback/", views.admin_feedback, name="admin-feedback"),
+    path("admin/feedback/<int:ticket_id>/", views.admin_ticket_detail, name="admin-ticket-detail"),
     path("admin/calls/<int:log_id>/", views.call_detail, name="admin-call-detail"),
 ]
 

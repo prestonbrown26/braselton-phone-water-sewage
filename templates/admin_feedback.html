@@ -1,0 +1,295 @@
+{% extends "admin_base.html" %}
+{% block title %}Feedback & Tickets - Braselton Water/Sewer{% endblock %}
+{% block extra_css %}
+<style>
+  .page-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 20px;
+    align-items: start;
+  }
+  .card-panel {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 14px;
+    padding: 18px;
+    box-shadow: 0 12px 30px rgba(17, 24, 39, 0.08);
+  }
+  .section-title {
+    margin: 0 0 4px 0;
+    font-size: 18px;
+    color: #111827;
+  }
+  .muted {
+    color: #6b7280;
+    font-size: 13px;
+    margin: 0 0 12px 0;
+  }
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  label {
+    font-weight: 600;
+    font-size: 13px;
+    color: #374151;
+  }
+  input[type="text"],
+  select,
+  textarea {
+    padding: 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 10px;
+    font-size: 14px;
+  }
+  textarea {
+    min-height: 140px;
+    resize: vertical;
+  }
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: 999px;
+    background: #eef2ff;
+    color: #3730a3;
+    font-weight: 700;
+    font-size: 12px;
+    margin-right: 8px;
+  }
+  .btn-primary {
+    background: var(--brand);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    padding: 12px 16px;
+    font-weight: 700;
+    cursor: pointer;
+    width: fit-content;
+  }
+  .meta-list {
+    list-style: none;
+    padding: 0;
+    margin: 12px 0 0 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .meta-list li {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    font-size: 14px;
+    color: #1f2937;
+  }
+  .meta-list .icon {
+    width: 22px;
+    height: 22px;
+    background: #eef2ff;
+    color: #3730a3;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    flex-shrink: 0;
+  }
+  @media (max-width: 960px) {
+    .page-grid {
+      grid-template-columns: 1fr;
+    }
+    .form-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+  .loading {
+    opacity: 0.7;
+    pointer-events: none;
+  }
+  .spinner {
+    width: 14px;
+    height: 14px;
+    border: 2px solid #fff;
+    border-top-color: transparent;
+    border-radius: 50%;
+    display: inline-block;
+    animation: spin 0.7s linear infinite;
+  }
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="card" style="padding:22px;">
+  <h1 style="margin:0 0 10px 0;">Feedback & Tickets</h1>
+  <p class="muted" style="margin-bottom:20px;">Submit bugs or feature requests. They’ll be emailed to the configured recipient.</p>
+
+  <div class="page-grid">
+    <div class="card-panel">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+        <div>
+          <h2 class="section-title">Submit a ticket</h2>
+          <p class="muted" style="margin:0;">Share details so we can triage quickly.</p>
+        </div>
+        <span class="pill">New</span>
+      </div>
+      <form method="post" action="{% url 'admin-feedback' %}" id="ticket-form">
+        {% csrf_token %}
+        <input type="hidden" name="ticket_form" value="1" />
+        <div class="form-grid" style="margin-bottom:14px;">
+          <div class="form-group">
+            <label for="ticket_title">Title</label>
+            <input type="text" id="ticket_title" name="ticket_title" placeholder="Short summary" />
+          </div>
+          <div class="form-group">
+            <label for="ticket_type">Type</label>
+            <select id="ticket_type" name="ticket_type">
+              <option value="feature">Feature Request</option>
+              <option value="bug">Bug</option>
+              <option value="kb_update">Knowledge Base Update</option>
+              <option value="transfer_change">Transfer Number Change</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group" style="margin-bottom:16px;">
+          <label for="ticket_description">Description</label>
+          <textarea id="ticket_description" name="ticket_description" required placeholder="Describe the request or issue"></textarea>
+        </div>
+        <div class="form-grid" id="transfer-fields" style="display:none; margin-bottom:16px;">
+          <div class="form-group">
+            <label for="transfer_label">Requested Label</label>
+            <input type="text" id="transfer_label" name="transfer_label" placeholder="e.g., After-hours Support" />
+          </div>
+          <div class="form-group">
+            <label for="transfer_number">Requested Number</label>
+            <input type="tel" id="transfer_number" name="transfer_number" placeholder="+1-770-867-4488" />
+          </div>
+        </div>
+        {% if recipient %}
+        <p class="muted" style="margin:0 0 10px 0;">Tickets will be sent to: {{ recipient }}</p>
+        {% else %}
+        <p class="muted" style="margin:0 0 10px 0;">No recipient configured. Set a transfer request email in Admin Settings.</p>
+        {% endif %}
+        <button type="submit" class="btn-primary" id="ticket-submit-btn">
+          <span class="btn-text">Submit Ticket</span>
+          <span class="spinner" style="margin-left:8px; display:none;"></span>
+        </button>
+      </form>
+    </div>
+
+    <div class="card-panel">
+      <h3 class="section-title" style="margin-bottom:8px;">Tickets</h3>
+      <p class="muted" style="margin:0 0 10px 0;">All submitted tickets{% if can_update %}; superusers can update status{% endif %}.</p>
+      <form method="get" style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:12px;">
+        <input type="text" name="q" placeholder="Search title..." value="{{ search }}" style="padding:8px 10px; border:1px solid #d1d5db; border-radius:8px; font-size:13px; flex:1; min-width:200px;">
+        <select name="status" style="padding:8px 10px; border:1px solid #d1d5db; border-radius:8px; font-size:13px;">
+          <option value="">All statuses</option>
+          {% for key,label in status_choices %}
+          <option value="{{ key }}" {% if status_filter == key %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+        <select name="type" style="padding:8px 10px; border:1px solid #d1d5db; border-radius:8px; font-size:13px;">
+          <option value="">All types</option>
+          {% for key,label in type_choices %}
+          <option value="{{ key }}" {% if type_filter == key %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+        <button type="submit" class="btn-primary" style="height:40px;">Filter</button>
+        <a href="{% url 'admin-feedback' %}" class="pill" style="text-decoration:none; display:inline-flex; align-items:center; height:40px;">Reset</a>
+      </form>
+      <div style="overflow:auto;">
+        <table style="width:100%; border-collapse:collapse; font-size:13px;">
+          <thead>
+            <tr style="background:#f3f4f6; text-align:left;">
+              <th style="padding:8px;">Title</th>
+              <th style="padding:8px;">Type</th>
+              <th style="padding:8px;">Status</th>
+              <th style="padding:8px;">Submitted</th>
+              <th style="padding:8px;">User</th>
+              <th style="padding:8px;">Description</th>
+              {% if can_update %}<th style="padding:8px;">Actions</th>{% endif %}
+            </tr>
+          </thead>
+          <tbody>
+            {% for t in tickets %}
+            <tr style="border-bottom:1px solid #e5e7eb;">
+              <td style="padding:8px; font-weight:600;">
+                <a href="{% url 'admin-ticket-detail' t.id %}" style="color:var(--brand); text-decoration:none;">{{ t.title }}</a>
+              </td>
+              <td style="padding:8px; text-transform:capitalize;">{{ t.ticket_type|default:"-" }}</td>
+              <td style="padding:8px;">{{ t.get_status_display }}</td>
+              <td style="padding:8px; color:#4b5563;">{{ t.created_at|date:"M j, Y H:i" }}</td>
+              <td style="padding:8px; color:#4b5563;">{{ t.user.username|default:"-" }}</td>
+              <td style="padding:8px; max-width:260px; white-space:pre-wrap; color:#111827;">{{ t.description }}</td>
+              {% if can_update %}
+              <td style="padding:8px;">
+                <form method="post" action="{% url 'admin-feedback' %}" style="display:flex; gap:6px; align-items:center;">
+                  {% csrf_token %}
+                  <input type="hidden" name="ticket_status_form" value="1" />
+                  <input type="hidden" name="ticket_id" value="{{ t.id }}" />
+                  <select name="ticket_status" style="padding:6px 8px; border:1px solid #d1d5db; border-radius:8px; font-size:13px;">
+                    {% for key, label in t.STATUS_CHOICES %}
+                    <option value="{{ key }}" {% if t.status == key %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                  </select>
+                  <button type="submit" class="btn-primary" style="padding:8px 10px; font-size:12px;">Update</button>
+                </form>
+              </td>
+              {% endif %}
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="{% if can_update %}7{% else %}6{% endif %}" style="padding:12px; text-align:center; color:#6b7280;">No tickets yet.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+  (function() {
+    const typeSelect = document.getElementById("ticket_type");
+    const transferFields = document.getElementById("transfer-fields");
+    if (!typeSelect || !transferFields) return;
+    const toggle = () => {
+      const show = typeSelect.value === "transfer_change";
+      transferFields.style.display = show ? "grid" : "none";
+    };
+    typeSelect.addEventListener("change", toggle);
+    toggle();
+  })();
+
+  (function() {
+    const form = document.getElementById("ticket-form");
+    const btn = document.getElementById("ticket-submit-btn");
+    if (!form || !btn) return;
+    const textSpan = btn.querySelector(".btn-text");
+    const spinner = btn.querySelector(".spinner");
+    let submitting = false;
+    form.addEventListener("submit", function(e) {
+      if (submitting) {
+        e.preventDefault();
+        return false;
+      }
+      submitting = true;
+      btn.classList.add("loading");
+      if (spinner) spinner.style.display = "inline-block";
+      if (textSpan) textSpan.textContent = "Submitting...";
+    });
+  })();
+</script>
+{% endblock %}
