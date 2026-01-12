@@ -223,68 +223,70 @@ def webhook_transcript(request: HttpRequest) -> JsonResponse:
         else:
             transcript += "No recording URL supplied."
 
-    existing = (
-        CallLog.objects.select_for_update()
-        .filter(call_id=call_id)
-        .first()
-    )
-    if existing:
-        # Update placeholder/partial record with the real transcript/metadata.
-        existing.transcript = transcript or existing.transcript
-        if caller_number:
-            existing.caller_number = caller_number
-        if duration_seconds is not None:
-            existing.duration_seconds = duration_seconds
-        if call_end_dt:
-            existing.created_at = call_end_dt
-        existing.sentiment = existing.sentiment or "neutral"
-        existing.save(
-            update_fields=[
-                "transcript",
-                "caller_number",
-                "duration_seconds",
-                "created_at",
-                "sentiment",
-            ]
+    with transaction.atomic():
+        existing = (
+            CallLog.objects.select_for_update()
+            .filter(call_id=call_id)
+            .first()
         )
-        logger.info("Call %s updated with transcript/metadata; acking webhook", call_id)
-        return JsonResponse({"status": "updated"})
+        if existing:
+            # Update placeholder/partial record with the real transcript/metadata.
+            existing.transcript = transcript or existing.transcript
+            if caller_number:
+                existing.caller_number = caller_number
+            if duration_seconds is not None:
+                existing.duration_seconds = duration_seconds
+            if call_end_dt:
+                existing.created_at = call_end_dt
+            existing.sentiment = existing.sentiment or "neutral"
+            existing.save(
+                update_fields=[
+                    "transcript",
+                    "caller_number",
+                    "duration_seconds",
+                    "created_at",
+                    "sentiment",
+                ]
+            )
+            logger.info("Call %s updated with transcript/metadata; acking webhook", call_id)
+            return JsonResponse({"status": "updated"})
 
-    # Attempt to reconcile with a recent placeholder created by the email webhook
-    placeholder = (
-        CallLog.objects.filter(
+        # Attempt to reconcile with a recent placeholder created by the email webhook
+        placeholder = (
+            CallLog.objects.select_for_update()
+            .filter(
+                caller_number=caller_number,
+                email_sent=True,
+                transcript__startswith="Call log placeholder",
+            )
+            .order_by("-created_at")
+            .first()
+        )
+
+        new_call = CallLog.objects.create(
+            call_id=call_id,
             caller_number=caller_number,
-            email_sent=True,
-            transcript__startswith="Call log placeholder",
+            transcript=transcript,
+            duration_seconds=duration_seconds,
+            sentiment="neutral",
+            transferred=False,
+            email_sent=False,
+            created_at=call_end_dt,
         )
-        .order_by("-created_at")
-        .first()
-    )
 
-    new_call = CallLog.objects.create(
-        call_id=call_id,
-        caller_number=caller_number,
-        transcript=transcript,
-        duration_seconds=duration_seconds,
-        sentiment="neutral",
-        transferred=False,
-        email_sent=False,
-        created_at=call_end_dt,
-    )
-
-    # If there was a placeholder for this caller, migrate its email events and delete it.
-    if placeholder:
-        moved = EmailEvent.objects.filter(call=placeholder).update(call=new_call)
-        if moved:
-            new_call.email_sent = True
-            new_call.save(update_fields=["email_sent"])
-        placeholder.delete()
-        logger.info(
-            "Merged placeholder call %s into %s (moved %s email events)",
-            placeholder.call_id,
-            call_id,
-            moved,
-        )
+        # If there was a placeholder for this caller, migrate its email events and delete it.
+        if placeholder:
+            moved = EmailEvent.objects.filter(call=placeholder).update(call=new_call)
+            if moved:
+                new_call.email_sent = True
+                new_call.save(update_fields=["email_sent"])
+            placeholder.delete()
+            logger.info(
+                "Merged placeholder call %s into %s (moved %s email events)",
+                placeholder.call_id,
+                call_id,
+                moved,
+            )
 
     logger.info("Stored call %s (duration=%s sec, caller=%s)", call_id, duration_seconds, caller_number)
     return JsonResponse({"status": "ok"})
