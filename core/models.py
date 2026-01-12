@@ -97,6 +97,7 @@ class PhoneConfiguration(models.Model):
     retell_ai_phone_label = models.CharField(max_length=128, blank=True, null=True)
     transfer_phone_numbers = models.JSONField(default=list, blank=True)
     transfer_phone_book = models.JSONField(default=list, blank=True)  # list of {"label": str, "number": str}
+    transfer_request_email = models.EmailField(blank=True, null=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:

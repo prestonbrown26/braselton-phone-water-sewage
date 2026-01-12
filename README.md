@@ -1,4 +1,4 @@
-## Braselton Utilities Voice Agent (Django)
+## Braselton Water/Sewer Voice Agent (Django)
 
 Django app that receives Retell AI webhooks, logs calls to Postgres, and sends billing emails through SMTP2Go.
 

@@ -1,5 +1,5 @@
 {% extends "admin_base.html" %}
-{% block title %}Admin Dashboard - Braselton Utilities{% endblock %}
+{% block title %}Admin Dashboard - Braselton Water/Sewer{% endblock %}
 {% block extra_css %}
 <style>
   .dashboard-grid {
@@ -139,7 +139,7 @@
 {% endblock %}
 {% block content %}
 <div class="card">
-  <h1>Good day, Braselton Utilities</h1>
+  <h1>Good day, Braselton Water/Sewer</h1>
   <p class="subtitle">Quick view of call activity and tools</p>
 
   <div class="config-card">
@@ -226,6 +226,40 @@
       <p>Download the full 5-year retention archive for compliance requests.</p>
       <a href="{% url 'admin-export-calls' %}">Download CSV</a>
     </div>
+  </div>
+
+  <div class="config-card" style="margin-top:22px;">
+    <div class="config-header">
+      <h2 class="config-title">Feedback & Tickets</h2>
+      <span style="font-size:12px; color:#6b7280;">Submit bugs or feature requests</span>
+    </div>
+    <form method="post" action="{% url 'admin-dashboard' %}">
+      {% csrf_token %}
+      <input type="hidden" name="ticket_form" value="1" />
+      <div class="config-grid">
+        <div class="config-item">
+          <p class="config-label">Title</p>
+          <p class="config-value">
+            <input type="text" name="ticket_title" placeholder="Short summary" style="width:100%; padding:10px 12px; border:1px solid #d1d5db; border-radius:8px; font-size:14px;">
+          </p>
+        </div>
+        <div class="config-item">
+          <p class="config-label">Type</p>
+          <p class="config-value">
+            <select name="ticket_type" style="width:100%; padding:10px 12px; border:1px solid #d1d5db; border-radius:8px; font-size:14px;">
+              <option value="feature">Feature Request</option>
+              <option value="bug">Bug</option>
+              <option value="other">Other</option>
+            </select>
+          </p>
+        </div>
+      </div>
+      <div class="config-item" style="margin-top:12px;">
+        <p class="config-label">Description</p>
+        <textarea name="ticket_description" required placeholder="Describe the request or issue" style="width:100%; min-height:120px; padding:10px 12px; border:1px solid #d1d5db; border-radius:8px; font-size:14px;"></textarea>
+      </div>
+      <button type="submit" style="margin-top:12px; background:var(--brand); color:#fff; padding:10px 16px; border:none; border-radius:8px; font-weight:700;">Submit Ticket</button>
+    </form>
   </div>
 
   <h2 style="margin-top:34px;">Recent Calls</h2>

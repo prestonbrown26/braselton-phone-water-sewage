@@ -1,5 +1,5 @@
 {% extends "admin_base.html" %}
-{% block title %}Admin Settings - Braselton Utilities{% endblock %}
+{% block title %}Admin Settings - Braselton Water/Sewer{% endblock %}
 {% block extra_css %}
 <style>
   .grid {
@@ -142,7 +142,7 @@
             type="text"
             id="retell_ai_phone_label"
             name="retell_ai_phone_label"
-            placeholder="Braselton Utilities"
+            placeholder="Braselton Water/Sewer"
             value="{{ config.retell_ai_phone_label|default_if_none:'' }}"
           />
           <span class="muted">Friendly label shown in admin.</span>
@@ -157,6 +157,17 @@
             value="{{ config.retell_ai_phone_number|default_if_none:'' }}"
           />
           <span class="muted">Number provisioned for the AI agent.</span>
+        </div>
+        <div class="form-group">
+          <label for="transfer_request_email">Transfer Request Recipient</label>
+          <input
+            type="email"
+            id="transfer_request_email"
+            name="transfer_request_email"
+            placeholder="alerts@example.com"
+            value="{{ config.transfer_request_email|default_if_none:'' }}"
+          />
+          <span class="muted">Where transfer-change requests are sent.</span>
         </div>
         <div class="form-group">
           <label>Transfer Phone Numbers</label>
@@ -200,6 +211,10 @@
             <li class="muted">None configured.</li>
           {% endfor %}
         </ul>
+      </div>
+      <div class="form-group">
+        <label>Transfer Request Recipient (configured by superuser)</label>
+        <p class="muted">{{ config.transfer_request_email|default:"Not set" }}</p>
       </div>
       <h3 class="section-title" style="margin-top:16px;">Request transfer change</h3>
       <form method="post" action="{% url 'admin-settings' %}">

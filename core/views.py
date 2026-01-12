@@ -379,7 +379,7 @@ def forgot_password(request: HttpRequest) -> HttpResponse:
         PasswordResetToken.objects.create(user=user, token=token, expires_at=expires_at)
         reset_link = request.build_absolute_uri(reverse("reset-password") + f"?token={token}")
         send_mail(
-            subject="Reset your Braselton Utilities admin password",
+            subject="Reset your Braselton Water/Sewer admin password",
             message=f"Click to reset your password: {reset_link}\n\nThis link expires in 2 hours.",
             from_email=getattr(settings, "EMAIL_FROM_ADDRESS", None),
             recipient_list=[email],
@@ -445,6 +445,36 @@ def accept_invite(request: HttpRequest) -> HttpResponse:
 # ---------------------------------------------------------------------------
 @login_required
 def admin_dashboard(request: HttpRequest) -> HttpResponse:
+    if request.method == "POST" and request.POST.get("ticket_form"):
+        title = (request.POST.get("ticket_title") or "").strip()
+        ticket_type = (request.POST.get("ticket_type") or "feature").strip()
+        description = (request.POST.get("ticket_description") or "").strip()
+        recipient = None
+        phone_config = PhoneConfiguration.objects.first()
+        if phone_config and phone_config.transfer_request_email:
+            recipient = phone_config.transfer_request_email
+        if not recipient:
+            recipient = getattr(settings, "EMAIL_FROM_ADDRESS", None)
+        if not recipient:
+            messages.error(request, "Ticket could not be sent: no recipient configured.")
+        else:
+            user_email = request.user.email if request.user.is_authenticated else "n/a"
+            body = (
+                f"New ticket submitted by {request.user.username} (email: {user_email})\n"
+                f"Type: {ticket_type}\n"
+                f"Title: {title or 'No title'}\n\n"
+                f"Description:\n{description}"
+            )
+            send_mail(
+                subject=f"[Ticket] {ticket_type.capitalize()}: {title or 'No title'}",
+                message=body,
+                from_email=getattr(settings, "EMAIL_FROM_ADDRESS", None),
+                recipient_list=[recipient],
+                fail_silently=False,
+            )
+            messages.success(request, "Ticket submitted. Thank you for the feedback.")
+        return redirect("admin-dashboard")
+
     total_calls = CallLog.objects.count()
     latest_call = CallLog.objects.first()
     total_emails = EmailEvent.objects.count()
@@ -553,6 +583,7 @@ def admin_settings(request: HttpRequest) -> HttpResponse:
                 return redirect("admin-settings")
             retell_number = (request.POST.get("retell_ai_phone_number") or "").strip()
             retell_label = (request.POST.get("retell_ai_phone_label") or "").strip()
+            req_email = (request.POST.get("transfer_request_email") or "").strip()
             labels = request.POST.getlist("transfer_label")
             numbers = request.POST.getlist("transfer_number")
             transfer_entries = []
@@ -568,6 +599,7 @@ def admin_settings(request: HttpRequest) -> HttpResponse:
             phone_config.retell_ai_phone_label = retell_label or None
             phone_config.transfer_phone_numbers = transfer_numbers
             phone_config.transfer_phone_book = transfer_entries
+            phone_config.transfer_request_email = req_email or None
             phone_config.save()
             messages.success(request, "Phone configuration saved.")
             return redirect("admin-settings")
@@ -585,14 +617,20 @@ def admin_settings(request: HttpRequest) -> HttpResponse:
                 f"Number: {req_number}\n"
                 f"Description: {req_desc or 'n/a'}\n"
             )
-            send_mail(
-                subject="Transfer number change request",
-                message=body,
-                from_email=getattr(settings, "EMAIL_FROM_ADDRESS", None),
-                recipient_list=["brownpreston2490@gmail.com"],
-                fail_silently=False,
+            recipient = phone_config.transfer_request_email or getattr(
+                settings, "EMAIL_FROM_ADDRESS", None
             )
-            messages.success(request, "Request sent for transfer number change.")
+            if not recipient:
+                messages.error(request, "Request email recipient is not configured.")
+            else:
+                send_mail(
+                    subject="Transfer number change request",
+                    message=body,
+                    from_email=getattr(settings, "EMAIL_FROM_ADDRESS", None),
+                    recipient_list=[recipient],
+                    fail_silently=False,
+                )
+                messages.success(request, "Request sent for transfer number change.")
             return redirect("admin-settings")
 
         if "user_form" in request.POST:
@@ -654,8 +692,8 @@ def admin_settings(request: HttpRequest) -> HttpResponse:
             )
             invite_link = request.build_absolute_uri(reverse("accept-invite") + f"?token={token}")
             send_mail(
-                subject="You're invited to Braselton Utilities Admin",
-                message=f"You have been invited to create an account.\n\nClick to accept: {invite_link}\n\nThis link expires in 48 hours.",
+                subject="You're invited to Braselton Water/Sewer Admin",
+                message=f"You have been invited to create an account for the Braselton Water/Sewer AI Agent Dashboard.\n\nClick to accept: {invite_link}\n\nThis link expires in 48 hours.",
                 from_email=getattr(settings, "EMAIL_FROM_ADDRESS", None),
                 recipient_list=[invite_email],
                 fail_silently=False,

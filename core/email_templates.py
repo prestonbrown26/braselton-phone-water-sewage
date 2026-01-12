@@ -10,10 +10,10 @@ from .models import EmailTemplateConfig
 
 DEFAULT_EMAIL_TEMPLATES: Dict[str, Dict[str, str]] = {
     "payment_link": {
-        "subject": "Braselton Utilities - Online Payment Link",
+        "subject": "Braselton Water/Sewer - Online Payment Link",
         "body": """Hello,
 
-Thank you for contacting the Town of Braselton Utilities Department.
+Thank you for contacting the Town of Braselton Water/Sewer Department.
 
 To pay your utility bill online, please visit:
 https://braselton.net/pay
@@ -29,11 +29,11 @@ Address: 6111 Winder Highway, Braselton, GA 30517
 
 Questions? Call (770) 867-4488
 
-Town of Braselton Utilities
+Town of Braselton Water/Sewer
 """,
     },
     "adjustment_form": {
-        "subject": "Braselton Utilities - Request for Adjustment Form",
+        "subject": "Braselton Water/Sewer - Request for Adjustment Form",
         "body": """Hello,
 
 Please find the Request for Adjustment form here:
@@ -47,14 +47,14 @@ We'll review your request within 3-5 business days.
 
 Questions? Call (770) 867-4488
 
-Town of Braselton Utilities
+Town of Braselton Water/Sewer
 """,
     },
     "general_info": {
-        "subject": "Braselton Utilities - Contact Information",
+        "subject": "Braselton Water/Sewer - Contact Information",
         "body": """Hello,
 
-Thank you for contacting the Town of Braselton Utilities Department.
+Thank you for contacting the Town of Braselton Water/Sewer Department.
 
 For more information, please visit our website:
 https://braselton.net
@@ -66,7 +66,7 @@ Address: 6111 Winder Highway, Braselton, GA 30517
 
 Hours: Monday-Friday, 8:00 AM - 5:00 PM
 
-Town of Braselton Utilities
+Town of Braselton Water/Sewer
 """,
     },
 }
